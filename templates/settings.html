@@ -1,0 +1,476 @@
+$def with (mqtt_servers, containers, domains, item_types, items, showSection)
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eHome Setup</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script>
+        var items = [
+                $for item in items:
+                    { id: $(loop.index-1), itemName: "$item['itemName']", itemMqttServer: $item['itemMqttServer'], itemContainer: "$item['itemContainer']", itemType: "$item['itemType']", publish: "$item['publish']", subscribe: "$item['subscribe']" },
+            ];
+            
+    </script>
+</head>
+<body>
+    <button onclick="toggleContent('mqtt_servers', true);toggleContent('containers', false);toggleContent('items', false);">MQTT Servers</button>
+    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', true);toggleContent('items', false);">Containers</button>
+    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', false);toggleContent('items', true);">Items</button>
+
+    <div id="mqtt_servers" $("hidden" if showSection != "mqtt" else "")>        
+        <h1>MQTT Servers</h1>
+        <h2>Add New Server</h2>
+        <form id="serverForm" action="/create/mqtt-server" method="post">
+            <input type="hidden" id="server_id" name="server_id" value="">
+            <div class="form-group">
+                <label for="address">Address:</label>
+                <input type="text" id="address" name="address" required>
+            </div>
+            <div class="form-group">
+                <label for="port">Port:</label>
+                <input type="number" id="port" name="port" required>
+            </div>
+            <div class="form-group">
+                <label for="ws_port">WebSockets Port:</label>
+                <input type="number" id="ws_port" name="ws_port" required>
+            </div>
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password">
+            </div>
+            
+            <button id ="addServerBtn" type="submit">Add Server</button>
+            <button id ="cancelServerBtn" type="button" hidden onclick="location.reload()">Cancel</button>
+        </form>
+        
+        <h2>Server List</h2>
+        <table id="serversTable">
+            <thead>
+                <tr>
+                    <th>Address</th>
+                    <th>Port</th>
+                    <th>WebSockets Port</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                $if mqtt_servers:
+                    $for server in mqtt_servers:
+                        <tr>
+                            <td>$server['address']</td>
+                            <td>$server['port']</td>
+                            <td>$server['ws_port']</td>
+                            <td>$server['username']</td>
+                            <td>$server['password']</td>
+                            <td>
+                                <button type="button" onclick="populateMqttServerForm($loop.index)">Update</button>
+                                <form action="/delete/mqtt-server/$(loop.index0)" method="post">
+                                    <button type="submit" 
+                                    $("" if len(list(i for i in items if i['itemMqttServer'] == loop.index0)) == 0 else "disabled")
+                                    >Delete</button>
+                                </form>
+                                <button type="button" onclick="testConnectivity($loop.index0)">Test</button>                        
+                            </td>
+                        </tr>
+                $else:
+                    <tr>
+                        <td colspan="5">No MQTT servers found.</td>
+                    </tr>
+            </tbody>
+        </table>    
+        <script>
+            // mqttServer data
+            var mqttServers = [
+                $for server in mqtt_servers:
+                    { id: $(loop.index-1), address: "$server['address']", port: "$server['port']", username: "$(server['username'] if server['username'] is not None else "null" )", password: "$(server['password'] if server['password'] is not None else "null" )"},
+            ];
+            function populateMqttServerForm(index) {
+                var server = document.getElementById("serversTable").rows[index].cells;
+                document.getElementById("address").value = server[0].innerText;
+                document.getElementById("port").value = server[1].innerText;
+                document.getElementById("ws_port").value = server[2].innerText;
+                document.getElementById("username").value = server[3].innerText;
+                document.getElementById("password").value = server[4].innerText;
+                document.getElementById("server_id").value = index;
+                document.getElementById("serverForm").action = "/update/mqtt-server/" + (index-1);
+                document.getElementById("addServerBtn").innerText = "Update Server";
+                document.getElementById("cancelServerBtn").hidden = false;
+            }
+
+            function testConnectivity(index) {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        // document.getElementById("testModal").style.display = "block";
+                        // document.getElementById("testModalContent").innerHTML = this.responseText;
+                        alert("Connectivity test returned:" + this.responseText);
+                    }
+                };
+                xhttp.open("POST", "/test/mqtt-server/" + index, true);
+                xhttp.send();
+            }
+        </script>
+    </div>
+
+    <div id="containers" $("hidden" if showSection != "containers" else "")>
+        <h1>Containers</h1>
+        <h2>Create Container</h2>
+        <form id="containerForm" action="/create/container" method="post">
+            <div class="form-group">
+                <label for="containerName">Container Name:</label>
+                <input type="text" id="containerName" name="containerName" required>
+            </div>
+            <div class="form-group">
+                <label for="parentContainer">Parent Container:</label>
+                <select id="parentContainer" name="parentContainer">
+                    <option value="">Select Parent Container</option>
+                    <!-- Options will be dynamically generated here -->
+                </select>
+            </div>        
+            <button id="createContainerBtn" type="submit">Create Container</button>
+            <button id ="cancelContainerBtn" type="button" hidden onclick="location.reload()">Cancel</button>
+        </form>
+
+        <h2 hidden>Containers</h2>
+            <table id="containersTable" hidden>
+                <thead>
+                    <tr>
+                        <th>GUID</th>
+                        <th>Name</th>
+                        <th>MQTT Server</th>
+                        <th>Parent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    $if containers:
+                        $for container in containers:
+                            <tr>
+                                <td>$container['guid']</td>
+                                <td>$container['containerName']</td>
+                                <td>$container['parentContainer']</td>
+                                <td>
+                                    <button type="button" onclick="populateContainerForm($loop.index-1)">Update</button>
+                                    <form action="/delete/container/$(loop.index-1)" method="post">
+                                        <button type="submit">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                    $else:
+                        <tr>
+                            <td colspan="5">No containers found.</td>
+                        </tr>
+                </tbody>
+            </table>  
+
+            <!-- Container tree -->
+            <div class="container-tree">
+                <ul id="containerTree">
+                    <!-- Tree structure will be dynamically generated here -->
+                </ul>
+            </div>
+
+        <!-- Script to populate container elements -->
+        <script>
+            // Container data
+            var containers = [
+                // { id: 1, name: "Container 1", parentContainer: null },
+                // { id: 2, name: "Container 2", parentContainer: null },
+                // { id: 3, name: "Container 1.1", parentContainer: 1 },
+                // { id: 4, name: "Container 1.2", parentContainer: 1 },
+                // { id: 5, name: "Container 2.1", parentContainer: 2 },
+                // { id: 6, name: "Container 2.1.1", parentContainer: 5 }
+                $for container in containers:
+                    { id: $(loop.index-1), containerName: "$container['containerName']", parentContainer: "$(container['parentContainer'] if container['parentContainer'] is not None else "null" )", guid: "$container['guid']" },
+            ];
+            containers.forEach(function(c){
+                if( c.parentContainer == "null" )
+                {
+                    c.parentContainer = null;
+                }
+            })
+
+            // Function to generate nested list structure for container tree
+            function generateContainerTree(containers, parentId) {
+                var tree = "";
+                containers.forEach(function(container) {
+                    if (container.parentContainer === parentId) 
+                    {
+                        // disable the delete button for the container if it has items but no parent
+                        // because if deleted, the items will have no container to move  to
+                        let container_items = items.filter(function(i){ return i.itemContainer == container.guid;});
+                        var disable_delete = container_items.length > 0 && container.parentContainer == null ? "disabled" : "";
+                        // console.log("Container's " + container.containerName + "{" + container.guid + "} delete is '" + disable_delete + "' because container_items: ", container_items.length);
+                        tree += "<li><div>" + container.containerName +
+                            "<button class=\"treeItem\" type=\"button\" onclick=\"populateContainerForm("+ container.id +")\">Update</button>"+
+                                    "<form class=\"treeItem\" action=\"/delete/container/"+ container.id +"\" method=\"post\">" +
+                                        "<button class=\"treeItem\" type=\"submit\"" + disable_delete + ">Delete</button>" +
+                                    "</form></div>";
+
+                        var children = generateContainerTree(containers, container.guid);
+                        if (children) {
+                            tree += "<ul>" + children + "</ul>";
+                        }
+                        tree += "</li>";
+                    }
+                });
+                return tree;
+            }
+
+            // Populate the container tree
+            var containerTree = document.getElementById("containerTree");
+            containerTree.innerHTML += generateContainerTree(containers, null);
+
+            function populateContainerForm(index) 
+            {
+                console.log(index,containers[index]);
+                var id = index;
+                console.log("parentContainer: " + containers[id].parentContainer);
+                document.getElementById("containerName").value = containers[id].containerName;
+                document.getElementById("parentContainer").value = containers[id].parentContainer != null ? containers[id].parentContainer : "" ;
+                document.getElementById("containerForm").action = "/update/container/" + id;
+                document.getElementById("createContainerBtn").innerText = "Update Container";
+                document.getElementById("cancelContainerBtn").hidden = false;
+            }        
+
+            // Function to generate options for dropdown recursively
+            function generateContainerOptions(containers, parentGuid, level, excludeContainerId) {
+                console.log("Generating container options for parentGuid:" + parentGuid +", excludeContainerId:" + excludeContainerId);
+                var options = "";
+                containers.forEach(function(container) {
+                    if (container.parentContainer === parentGuid && 
+                        container.id !== excludeContainerId) 
+                    {
+                        console.log("   adding container id:" + container.id );
+                        options += "<option value='" + container.guid + "'>" + "&nbsp;&nbsp;&nbsp;&nbsp;".repeat(level) + container.containerName + "</option>";
+                        options += generateContainerOptions(containers, container.guid, level + 1, excludeContainerId);
+                    }
+                });
+                return options;
+            }
+
+            // Populate the dropdown with container options
+            var parentContainerDropdown = document.getElementById("parentContainer");
+            parentContainerDropdown.innerHTML += generateContainerOptions(containers, null, 0);            
+        </script>
+    </div>
+
+    <div id="items" $("hidden" if showSection != "items" else "")> 
+        <h1>Items</h1>
+        <h2>Create Item</h2>
+        <form id="itemForm" action="/create/item" method="post">
+            <div class="form-group">
+                <label for="itemMqttServer">MQTT Server:</label>
+                <select id="itemMqttServer" name="itemMqttServer" required">
+                    <option value="">Select MQTT Server</option>
+                    <!-- Options will be dynamically generated here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="itemContainer">Container:</label>
+                <select id="itemContainer" name="itemContainer">
+                    <option value="">Select Container</option>
+                    <!-- Options will be dynamically generated here -->
+                </select>
+            </div> 
+            <div class="form-group">
+                <label for="itemName">Item Name:</label>
+                <input type="text" id="itemName" name="itemName" required>
+            </div>
+            <div class="form-group">
+                <label for="itemType">Item type:</label>
+                <select id="itemType" name="itemType" required>
+                    <option value="">Select item type</option>
+                    <!-- Options will be dynamically generated here -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="publish">MQTT Publish Topic:</label>
+                <input type="text" id="publish" name="publish" required>
+            </div>
+            <div class="form-group">
+                <label for="subscribe">MQTT Subscribe Topic:</label>
+                <input type="text" id="subscribe" name="subscribe">
+            </div>
+            
+            <button id="createItemBtn" type="submit">Create Item</button>
+            <button id ="cancelItemBtn" type="button" hidden onclick="location.reload()">Cancel</button>
+        </form>
+
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>MQTT Server</th>
+                    <th>Container</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>MQTT Publish</th>
+                    <th>MQTT Subscribe</th>
+                </tr>
+            </thead>
+            <tbody>
+                $if items:
+                    $for item in items:
+                        <tr>
+                            <td>$(mqtt_servers[int(item['itemMqttServer'])]['address'] + ":" + mqtt_servers[int(item['itemMqttServer'])]['port'])</td>
+                            $code:
+                                def getParent(containerGuid, delimit):
+                                    if not containerGuid:
+                                        return ""
+                                    container = list(c for c in containers if c['guid'] == containerGuid)[0]
+                                    if container['parentContainer']:
+                                        return getParent(container['parentContainer'], delimit) + delimit + container['containerName']
+                                    else:
+                                        return container['containerName']
+                            <td>$getParent(item['itemContainer'], "/") ($item['itemContainer'])</td>
+                            <td>$item['itemName']</td>
+                            <td>
+                                $(t['description'] for t in item_types if t['id'] == item['itemType'])
+                            </td>
+                            <td>$item['publish']</td>
+                            <td>$item['subscribe']</td>
+                            <td>
+                                <button type="button" onclick="populateItemForm($(loop.index0))">Update</button>
+                                <form action="/delete/item/$(loop.index0)" method="post">
+                                    <button type="submit"
+                                    $("disabled" if (not containers[loop.index0]['parentContainer']) and len(list(i for i in items if i['itemContainer'] == containers[loop.index0]['guid'])) > 0 else "")
+                                    >Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                $else:
+                    <tr>
+                        <td colspan="5">No items found.</td>
+                    </tr>
+            </tbody>
+        </table>  
+
+        <!-- Items tree -->
+        <div class="item-tree">
+            <ul id="itemTree">
+                <!-- Tree structure will be dynamically generated here -->
+            </ul>
+        </div>
+
+        <script>
+            // Function to generate nested list structure for item tree
+            function generateItemTree(containers, parentId) {
+                var tree = "";
+                containers.forEach(function(container) {
+                    if (container.parentContainer === parentId) {
+                        tree += "<li>" + container.containerName;
+                        var container_items = items.filter(function(item){
+                            // console.log("checking itemContainer: " + item.itemContainer + " against container: " + container.guid);
+                            return item.itemContainer == container.guid;
+                        });
+                        // console.log("for container " + container.guid + " container_items: ", container_items);
+                        if(container_items)
+                        {
+                            tree += "<ul>" + container_items.map(function(item){
+                                return "<li><div>" + item.itemName +
+                                "<button class=\"treeItem\" type=\"button\" onclick=\"populateItemForm("+ item.id +")\">Update</button>"+
+                                "<form class=\"treeItem\" action=\"/delete/item/"+ item.id +"\" method=\"post\">" +
+                                    "<button class=\"treeItem\" type=\"submit\">Delete</button>" +
+                                "</form></div></li>" ;
+                            })
+                            + "</ul>";
+                            
+                        }
+                        var children = generateItemTree(containers, container.guid);
+                        if (children) {
+                            tree += "<ul>" + children + "</ul>";
+                        }
+                        tree += "</li>";
+                    }
+                });
+                return tree;
+            }
+
+            // Populate the item tree
+            var itemTree = document.getElementById("itemTree");
+            itemTree.innerHTML += generateItemTree(containers, null);
+
+            function populateItemForm(index) 
+            {
+                console.log(index,items[index]);
+                var id = index;
+                console.log("itemContainer: " + items[id].itemContainer);
+                document.getElementById("itemName").value = items[id].itemName;
+                document.getElementById("itemMqttServer").value = items[id].itemMqttServer;
+                document.getElementById("itemContainer").value = items[id].itemContainer;
+                document.getElementById("itemType").value = items[id].itemType;
+                document.getElementById("publish").value = items[id].publish;
+                document.getElementById("subscribe").value = items[id].subscribe;
+                document.getElementById("itemForm").action = "/update/item/" + id;
+                document.getElementById("createItemBtn").innerText = "Update Item";
+                document.getElementById("cancelItemBtn").hidden = false;
+            }        
+
+             // Function to generate MQTT server options
+             function generateMqttServerOptions() {
+                var options = "";
+                $for server in mqtt_servers:
+                    options += "<option value='$(loop.index0)'>$server['address']:$server['port']</option>";
+                
+                return options;
+            }
+            // Populate the MQTT server dropdown
+            var mqttServerDropdown = document.getElementById("itemMqttServer");
+            mqttServerDropdown.innerHTML += generateMqttServerOptions();            
+
+            function generateItemTypesOptions()
+            {
+                var options = "";
+                $for item_type in item_types:
+                    options += "<option value='$item_type['id']'>$item_type['description']</option>";
+                
+                return options;
+            }
+            // Populate the type dropdown
+            var itemTypeDropdown = document.getElementById("itemType");
+            itemTypeDropdown.innerHTML += generateItemTypesOptions();
+
+            var parentContainerDropdown = document.getElementById("itemContainer");
+            // Populate the dropdown with container options
+            parentContainerDropdown.innerHTML = 
+                    "<option value=\"\">Select Container</option>" +
+                    generateItemContainerOptions(containers, null, null);
+
+            // Function to generate options for dropdown recursively
+            function generateItemContainerOptions(containers, parentGuid, level) {
+                console.log("Generating item container options for parentGuid:" + parentGuid);
+                var options = "";
+                containers.forEach(function(container) {
+                    if (container.parentContainer === parentGuid) 
+                    {
+                        console.log("   adding container id:" + container.id );
+                        options += "<option value='" + container.guid + "'>" + "&nbsp;&nbsp;&nbsp;&nbsp;".repeat(level) + container.containerName + "</option>";
+                        options += generateItemContainerOptions(containers, container.guid, level + 1);
+                    }
+                });
+                return options;
+            }
+
+        </script>
+    </div>
+
+    <script>        
+        function toggleContent(elementId, show) {
+            var content = document.getElementById(elementId);
+            if (show) {
+                content.style.display = 'block';
+            } else {
+                content.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

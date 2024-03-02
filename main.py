@@ -3,9 +3,12 @@ import web
 import json
 import paho.mqtt.client as mqtt
 import uuid
+import time
+import threading
 
 urls = (
     '/', 'Index',
+    '/settings', 'Settings',
     '/create/mqtt-server', 'CreateMqttServer',
     '/retrieve/mqtt-server/(\d+)', 'RetrieveMqttServer',
     '/update/mqtt-server/(\d+)', 'UpdateMqttServer',
@@ -84,31 +87,65 @@ item_types = [
  
 render = web.template.render('templates/')
 
+def publish_mqtt(server, i):
+    client = mqtt.Client()
+    try:
+        client.connect(host=server['address'], port=int(server['port']))
+        client.publish("test/topic", "Hello MQTT!{}".format(i))
+        client.disconnect()
+        print(f"Published message successfully to {server['address']}")
+    except Exception as e:
+        print(f"Failed to connect to {server['address']}: {e}")
+
+class Messenger:
+    def __init__(self):
+        self.i = 0
+        
+    def SendData(self):
+        print("Set to send data.")
+        thread = threading.Thread(target=self.publish_mqtt_thread)
+        thread.start()
+
+    def publish_mqtt_thread(self):
+        for server in mqtt_servers:
+            publish_mqtt(server, self.i)
+        self.i = (self.i + 1) % 100
+
+
+messenger = Messenger()
+
+
 class Index:
+    def GET(self):
+        return render.index(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items)
+
+class Settings:
     def GET(self):
         data = web.input(showSection="mqtt")
         # print("Sending mqtt_servers: {}".format(json.dumps(mqtt_servers, indent=4)))
-        return render.index(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items, showSection=data.showSection)
+        return render.settings(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items, showSection=data.showSection)
 
 class CreateMqttServer:
     def POST(self):
         data = web.input()
         address = data.get('address')
         port = data.get('port')
+        ws_port = data.get('ws_port')
         username = data.get('username')
         password = data.get('password')
         
         mqtt_servers.append({
             'address': address,
             'port': port,
+            'ws_port': ws_port,
             'username': username,
             'password': password
         })
         
         with open(mqtt_servers_file_path, 'w') as f:
             json.dump(mqtt_servers, f, indent=4)
-        
-        raise web.seeother('/?showSection=mqtt')
+        messenger.SendData()
+        raise web.seeother('/settings?showSection=mqtt')
 
 class RetrieveMqttServer:
     def GET(self, server_id):
@@ -126,13 +163,14 @@ class UpdateMqttServer:
             data = web.input()
             mqtt_servers[server_id]['address'] = data.get('address')
             mqtt_servers[server_id]['port'] = data.get('port')
+            mqtt_servers[server_id]['ws_port'] = data.get('ws_port')
             mqtt_servers[server_id]['username'] = data.get('username')
             mqtt_servers[server_id]['password'] = data.get('password')
             
             with open(mqtt_servers_file_path, 'w') as f:
                 json.dump(mqtt_servers, f, indent=4)
-            
-            raise web.seeother('/?showSection=mqtt')
+            messenger.SendData()
+            raise web.seeother('/settings?showSection=mqtt')
         else:
             return json.dumps({"error": "Server not found"})
 
@@ -147,8 +185,8 @@ class DeleteMqttServer:
             
             with open(mqtt_servers_file_path, 'w') as f:
                 json.dump(mqtt_servers, f, indent=4)
-            
-            raise web.seeother('/?showSection=mqtt')
+            messenger.SendData()
+            raise web.seeother('/settings?showSection=mqtt')
         else:
             return json.dumps({"error": "Server not found"})
 
@@ -171,20 +209,18 @@ class CreateContainer:
         data = web.input()
         print('Received: {}'.format(json.dumps(data, indent=4))) 
         containerName = data.get('containerName')
-        mqttServer = data.get('mqttServer')
         parentContainer = data.get('parentContainer')
         guid = str(uuid.uuid4())
         containers.append({
             'containerName': containerName,
-            'mqttServer': int(mqttServer),
             'parentContainer': None if not parentContainer else parentContainer,
             'guid': guid
         })
         
         with open(containers_file_path, 'w') as f:
             json.dump(containers, f, indent=4)
-        
-        raise web.seeother('/?showSection=containers')
+        messenger.SendData()
+        raise web.seeother('/settings?showSection=containers')
 
 class UpdateContainer:
     def POST(self, container_id):
@@ -194,13 +230,12 @@ class UpdateContainer:
             data = web.input()
             print('Received: {}'.format(json.dumps(data, indent=4))) 
             containers[container_id]['containerName'] = data.get('containerName')
-            containers[container_id]['mqttServer'] = int(data.get('mqttServer'))
             containers[container_id]['parentContainer'] = None if not  data.get('parentContainer') else data.get('parentContainer')
             
             with open(containers_file_path, 'w') as f:
                 json.dump(containers, f, indent=4)
-            
-            raise web.seeother('/?showSection=containers')
+            messenger.SendData()
+            raise web.seeother('/settings?showSection=containers')
         else:
             return json.dumps({"error": "Container not found"})
 
@@ -225,8 +260,8 @@ class DeleteContainer:
             
             with open(containers_file_path, 'w') as f:
                 json.dump(containers, f, indent=4)
-            
-            raise web.seeother('/?showSection=containers')
+            messenger.SendData()
+            raise web.seeother('/settings?showSection=containers')
         else:
             return json.dumps({"error": "Container not found"})
 
@@ -252,8 +287,8 @@ class CreateItem:
         
         with open(items_file_path, 'w') as f:
             json.dump(items, f, indent=4)
-        
-        raise web.seeother('/?showSection=items')
+        messenger.SendData()
+        raise web.seeother('/settings?showSection=items')
 
 class UpdateItem:
     def POST(self, item_id):
@@ -271,8 +306,8 @@ class UpdateItem:
             
             with open(items_file_path, 'w') as f:
                 json.dump(items, f, indent=4)
-            
-            raise web.seeother('/?showSection=items')
+            messenger.SendData()
+            raise web.seeother('/settings?showSection=items')
         else:
             return json.dumps({"error": "Item not found"})
 
@@ -284,8 +319,8 @@ class DeleteItem:
             
             with open(items_file_path, 'w') as f:
                 json.dump(items, f, indent=4)
-            
-            raise web.seeother('/?showSection=items')
+            messenger.SendData()
+            raise web.seeother('/settings?showSection=items')
         else:
             return json.dumps({"error": "Item not found"})
 
