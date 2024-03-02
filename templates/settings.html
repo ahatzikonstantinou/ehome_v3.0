@@ -340,9 +340,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
                             <td>
                                 <button type="button" onclick="populateItemForm($(loop.index0))">Update</button>
                                 <form action="/delete/item/$(loop.index0)" method="post">
-                                    <button type="submit"
-                                    $("disabled" if (not containers[loop.index0]['parentContainer']) and len(list(i for i in items if i['itemContainer'] == containers[loop.index0]['guid'])) > 0 else "")
-                                    >Delete</button>
+                                    <button type="submit">Delete</button>
                                 </form>
                             </td>
                         </tr>

@@ -58,12 +58,26 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             }
         }
 
+        var configuration_str = "";
         function onMessageArrived(message) {
-            console.log("Message received:", message.payloadString);
-            const ul = document.getElementById("messages");
-            const li = document.createElement("li");
-            li.appendChild(document.createTextNode(message.payloadString));
-            ul.appendChild(li);
+            if(message.payloadString != configuration_str)
+            {
+                console.log("New configuration.");
+                configuration_str = message.payloadString;
+                let configuration = JSON.parse(configuration_str);
+                mqttServers = configuration.mqttServers;
+                containers = configuration.containers;
+                item_types = configuration.item_types;
+                items = configuration.items;
+            }
+            else
+            {
+                console.log("Configuration unchanged.");
+            }
+            // const ul = document.getElementById("messages");
+            // const li = document.createElement("li");
+            // li.appendChild(document.createTextNode(message.payloadString));
+            // ul.appendChild(li);
         }
 
         window.onload = function () {
@@ -73,7 +87,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
 </head>
 <body>
     <h1>MQTT Client</h1>
-    <ul id="messages"></ul>
+    <!-- <ul id="messages"></ul> -->
     <script>
         
     </script>
