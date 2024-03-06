@@ -1,0 +1,43 @@
+<div ng-show="showMqttTopics">
+    <span class="item">[{{i.type}}]</span>
+    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+</div>
+<div ng-repeat="(id,m) in i.device.modems" style="margin:0px; padding:0px;">
+    <!--ahat. Note: 
+        margin-top:1px; is required or else the button is not displayed at the far left
+        padding-top:5px; is required or else the top border of the device-icon is not displayed
+    -->
+    <div style="overflow:auto;" ng-init="showModemInfo=false;">
+            <div class="device-label">
+                <span class="mdi mdi-wan device-icon"/>
+                <span class="device-name">{{m.manufacturer}} - {{m.model}}</span>
+            </div>
+                                        
+        <div class="state-container">
+            <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning switch-on': m.state == 'registered', 'btn-info switch-off': m.state == 'disabled' || m.state == 'enabling' }" ng-click="m.state == 'registered' ? i.device.disable( m.id ) : ( m.state == 'disabled' ? i.device.enable( m.id ) : null )" data-translate="{{'modem.state.' + m.state}}" ng-disabled="m.state == 'enabling'">
+                {{m.state}}
+            </button>
+            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate | date: 'dd/MM/yyyy HH:mm') : ''}}</span>
+        </div>
+
+        <div class="device-buttons">
+            <button type="button" class="btn btn-xs btn-default" ng-click="showModemInfo=!showModemInfo">
+                <span class="glyphicon glyphicon-collapse-up" ng-if="showModemInfo"/>
+                <span class="glyphicon glyphicon-collapse-down" ng-if="!showModemInfo"/>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.refresh( m.id )">
+                <span class="glyphicon glyphicon-refresh"/>
+            </button>
+        </div>
+    </div>
+    <div ng-show="showModemInfo" class="modem-info">
+            <div><label data-translate="modem.info.id"/>: {{m.id}}</div>
+            <div><label data-translate="modem.info.hardware"/>: {{m.hardware}}</div>
+            <div><label data-translate="modem.info.state"/>: {{m.state}}</div>
+            <div><label data-translate="modem.info.power"/>: {{m.power}}</div>
+            <div><label data-translate="modem.info.mode"/>: {{m.mode}}</div>
+            <div><label data-translate="modem.info.imei"/>: {{m.imei}}</div>
+            <div><label data-translate="modem.info.operator"/>: {{m.operator}}</div>
+    </div>
+</div>

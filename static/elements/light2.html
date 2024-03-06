@@ -1,0 +1,21 @@
+<div ng-show="showMqttTopics">
+    <span class="item">[{{i.type}}]</span>
+    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+</div>
+<div style="overflow: auto;">
+    <div class="device-label">
+        <span class="mdi mdi-lightbulb device-icon"/>
+        <span class="device-name">{{i.name}}</span>
+    </div>    
+    <div class="state-container">
+        <!--<button type="button" class="btn btn-xs" ng-class="{ 'btn-warning': i.device.state.main == 'ON', 'btn-info': i.device.state.main == 'OFF' }" ng-click="i.device.state.main == 'ON' ? i.device.state.main = 'OFF' : i.device.state.main = 'ON'">-->
+        <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning device-on': i.device.state.left == 'ON', 'btn-info device-off': i.device.state.left == 'OFF', 'unavailable': i.device.state.left == 'UNAVAILABLE', 'switch-on': i.device.state.left == 'ON', 'switch-off': i.device.state.left == 'OFF' }" ng-click="i.device.state.left == 'ON' ? i.device.switchLeft( 'OFF' ) : i.device.switchLeft( 'ON' )" ng-disabled="i.device.state.left == 'UNAVAILABLE'" data-translate="{{'home.state.' + i.device.state.left}}" onfocus="this.blur();">
+            {{i.device.state.left}}
+        </button>
+        <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning': i.device.state.right == 'ON', 'btn-info': i.device.state.right == 'OFF', 'unavailable': i.device.state.right == 'UNAVAILABLE', 'switch-on': i.device.state.right == 'ON', 'switch-off': i.device.state.right == 'OFF' }" ng-click="i.device.state.right == 'ON' ? i.device.switchRight( 'OFF' ) : i.device.switchRight( 'ON' )" ng-disabled="i.device.state.right == 'UNAVAILABLE'" data-translate="{{'home.state.' + i.device.state.right}}" onfocus="this.blur();">
+            {{i.device.state.right}}
+        </button>
+        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate | date: 'dd/MM/yyyy HH:mm') : ''}}</span>
+    </div>
+</div>

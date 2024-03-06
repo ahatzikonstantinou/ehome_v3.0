@@ -1,0 +1,1075 @@
+.settings label {
+    width: 20%;
+    text-align: right;
+    /* display: inline-flex; */
+    vertical-align: -webkit-baseline-middle;
+    vertical-align: middle;
+    margin-right: 0.5em;
+    margin-left: 1em;
+}
+
+.settings .value {
+    width: 70%; /*although the rest of the grid line is the label at 25% width, if this width = 75% then the "value" div moves to the next line*/
+    display: inline-grid;   /* the only way to keep label and input in the same line*/
+}
+
+/* the width of the select element e.g. settings type, should not be maximized*/
+.settings .value select {
+    width: -webkit-min-content;
+    width: -moz-min-content;
+    width: min-content;
+}
+
+/* the folowing two classes were not used after all because they don't look nice on smpartphone
+.sms-send.allowed-destinations {
+    height: 100px; 
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+    display: inline-block;
+}
+
+.sms-send.allowed-destinations li {
+    display: inline-block;
+}
+*/
+.sms-row {
+    overflow:auto;
+    border-style:solid;
+    border-color:#ddd;
+    border-width:0px 0px 1px 0px;
+}
+
+.sms-checkbox-cell {
+    float:left;
+    width:20px;
+    vertical-align: top;
+    margin:2px;
+}
+
+.sms-content-cell {
+    overflow:hidden; /*ahat: required to trigger expansion of div to full width according to https://stackoverflow.com/a/1767270/8179862 */
+}
+
+.sms-send.char-count {
+    color: #555;
+}
+
+.sms-send.note {
+    display: inline-block;
+    color: #555;
+    font-style: oblique;
+    font-size: small;
+}
+
+.sms-new {
+    float: left;
+    color: orangered;
+    /* background-color: orange; */
+    /* padding: 2px; */
+    margin-right: 4px;
+}
+
+.sms-delivery.label {
+    font-weight: normal;
+    font-size: smaller;
+    color: #333;
+}
+
+.sms-delivery.value {
+    font-weight: bolder;
+    font-size: smaller;
+}
+
+.sms-type {
+    float:left;
+    margin-right: 10px;
+}
+
+.sms-type.incoming {
+    color: #66d;
+}
+
+.sms-type.outgoing {
+    color: #d66;
+}
+
+.sms-type.report-success {
+    color: #151;
+}
+
+.sms-type.report-error {
+    color: #e44;
+}
+
+.sms-text{
+    /* font-size: small; */
+    font-family: 'Times New Roman', Times, serif;
+    display: block;
+}
+
+.sms-text.new {
+    font-weight: bolder;
+}
+
+.sms-time {
+    font-weight: bolder;
+    float:right;
+    font-size: smaller;
+}
+
+.sms-number{
+    font-weight: bolder;
+    float:left;
+    /* font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif; */
+    font-size: smaller;
+}
+
+.sms-id{
+    /* font-weight: bolder; */
+    float:left;
+    font-size: smaller;
+    margin-right: 10px;
+}
+
+.modem-info label {
+    width:20%; 
+    text-align:right;
+}
+
+.server-info
+{
+    overflow:auto; 
+    margin:4px;
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #ddd;
+}
+server .items {
+    /* background-color: red; */
+    margin: 0px 4px 0px 5px;
+}
+
+server .items .state {
+    float: right;
+}
+
+/* .header > ul */
+.language
+{
+    list-style-type: none;
+}
+
+/*ahat: make language selection white and smaller*/
+a.dropdown-toggle.ng-scope
+{
+    color: white;
+    font-size: 16px;
+}
+
+.dropdown-menu
+{
+    left: auto;
+    right: -12px;
+}
+
+/*ahat: change margins and paddings for mobile devices*/
+.container {
+    padding-right: 0px;
+    padding-left: 0px;
+    margin-right: 0px;
+    margin-left: 0px;
+}
+
+.well {
+    padding: 0px;
+    background-color: white;
+}
+
+.state.label-danger{
+    color: yellow;
+}
+
+.device-label
+{
+    /* overflow: auto; */
+    /* float:left; */
+    margin:5px 5px 5px 0px;
+    display: inline-block;
+    /* width: 100%; */
+}
+
+.device-icon
+{    
+    /*background-color: cyan;*/
+    color: #55a;
+    border: solid 1px #55a;
+    border-radius: 3px;
+    padding: 4px;
+    margin-right: 4px;
+}
+
+.device-name
+{
+    display: inline-block;
+    /* display: inline; */
+}
+
+/* Smartphones (portrait) ----------- */
+@media only screen 
+and (max-width : 360px) {
+    /* Styles */
+
+    room .device-icon
+    {
+        vertical-align: top;
+    }
+
+    room .device-icon::before
+    {
+        vertical-align: top;
+    }
+
+    room .device-name 
+    {
+        max-width: 115px;
+        /* width: 110px; */
+        /* width: 20px;  */
+        /* height: 1.2em;  */
+        /* overflow: hidden;  */
+        /* text-overflow: ellipsis;  */
+        /* white-space: nowrap; */
+    }
+}
+
+.device-buttons
+{
+    margin: 4px 4px 4px 4px;
+    display: inline-block;
+}
+
+.last-update
+{
+    font-family: Courier New, Courier, monospace;
+    font-size: 12px;
+    color: gray;
+    display: block;
+    text-align: right;
+}
+.last-update:not(:empty):before{
+    content: '[';
+}
+.last-update:not(:empty):after{
+    content: ']';
+}
+
+.device-mqtt-state
+{
+    font-family: Courier New, Courier, monospace;
+    font-size: 12px;
+    color: gray;
+    display: inline-block;
+}
+
+.state-row > .last-update
+{
+    display: inline-block;
+    margin-top:5px;
+    /* float: left; */
+    /* vertical-align: text-bottom; */
+}
+
+/*ahat: switch-xx classes are used with buttons e.g. in light devices*/
+.switch-on
+{
+    /* top:-8px; */
+    width: 78px;
+    position:relative;
+    padding-right: 10px;
+}
+
+.switch-off
+{
+    /* top:-8px; */
+    width: 78px;
+    position:relative;
+    padding-left: 10px;
+}
+
+.switch-on:after
+{
+    position:absolute;
+    right:1px;
+    top:1px;
+    background: white;
+    height: 22px;
+    width: 8px;
+    display: block;
+    content: " ";
+    border-radius: 3px;
+}
+
+.switch-off:before
+{
+    position:absolute;
+    left:1px;
+    top:1px;
+    background: white;
+    height: 22px;
+    width: 8px;
+    display: block;
+    content: " ";
+    border-radius: 3px;
+}
+
+/*ahat: used to disable clicking and dragging the slider when it should be unavailable*/
+.rzslider-disable
+{
+    background-color: grey;
+    opacity:.08; 
+    width:280px; /*must be same width as rzslider-container*/
+    height: 20px;
+    position:absolute;
+    top: 0px;
+    left: 0px;
+    z-index:1001; /*to cover the rzslider*/
+}
+
+/*ahat: rzslider is displayed inside a div of this class in order to specify size and placement*/
+.rzslider-container
+{
+    float:left;
+    width:280px;
+    position: relative; /*required so that rzslider-disable can be located absolute to this*/
+}
+
+/* Smartphones (landscape) ----------- */
+@media only screen 
+and (min-width : 361px) {
+    /* Styles */
+    .rzslider-container
+    {
+        float:left;
+        width:580px;
+        position: relative; /*required so that rzslider-disable can be located absolute to this*/
+        }
+
+    .rzslider-disable
+    {
+        background-color: grey;
+        opacity:.08; 
+        width:580px; /*must be same width as rzslider-container*/
+        height: 20px;
+        position:absolute;
+        top: 0px;
+        left: 0px;
+        z-index:1001; /*to cover the rzslider*/
+        }
+}
+
+.rzslider
+{
+    margin: 0px 0px 0px 0px;
+}
+
+/*ahat: make the number over the slider cursor disappear. I am displaying current value in another widget*/
+.rzslider .rz-bubble {
+    display: none;
+}
+
+.rzslider .rz-pointer 
+{
+  top: -6px;
+  z-index: 3;
+  width: 16px;
+  height: 16px;
+}
+
+.rzslider .rz-pointer:after 
+{
+  top: 5px;
+  left: 5px;
+  width: 6px;
+  height: 6px;
+}
+
+.state.slider-value
+{
+    width: 30px;
+    min-width: auto;
+}
+
+.state-container
+{
+    overflow: auto;
+    float:right;
+    cursor: default;
+    max-width:100%;
+    max-height:100%;
+    display: block;
+}
+
+/*ahat: this makes the images and video from web cams autoresize to fill all available area*/
+.state-container > img 
+{
+    max-width:100%;
+    max-height:100%;
+}
+
+.unarmed { background-color: #5bc0de; color: #fff; }
+.arming { background-color: #337ab7; color: #fff; }
+.armed-home { background-color: #5cb85c; color: #fff; }
+.armed-away { background-color: #5cb85c; color: #fff; }
+.triggered { background-color: #f0ad4e; color: #911 !important; }
+.activated { background-color: #d9534f; color: yellow !important; }
+
+.state
+{
+    padding: 3px 5px 3px 5px;
+    margin: 1px 0px 4px 1px;
+    border-radius: 4px;
+    color: white;
+    max-width:100%;
+    min-width: 65px; /*95px;*/
+    text-overflow: ellipsis;
+    display: block;
+    float: right;
+    /* line-height: 1; */
+}
+
+/*ahat: used in e.g. MOTIONCAMERAPANTILT with lastupdate and state in one row*/
+.state-row
+{
+    display: block;
+    overflow: auto;
+}
+
+.state-row > .state
+{
+    display: inline-block;
+    margin-bottom: 1px;
+}
+
+/*ahat: used when stacking states e.g. recline on top of main or left for DOOR2R or DOOR1R*/
+.state.top
+{
+    margin-bottom: 2px;
+}
+
+.state.primary
+{
+    background-color: #337ab7;
+    color: #fff;
+}
+
+.state.success
+{
+    background-color: #5cb85c;
+    color: #fff;
+}
+
+.state.info
+{
+    background-color: #5bc0de;
+    color: #fff;
+}
+
+.state.warning
+{
+    background-color: #f0ad4e;
+    color: #fff;
+}
+
+.state.danger
+{
+    background-color: #d9534f;
+    color: yellow;
+}
+
+.state.unavailable 
+{
+    background-color: #c2c2c2;
+    color: #fff;
+}
+
+.connection
+{
+    font-size: 13px;
+    line-height: normal;
+}
+
+.protocol
+{
+    font-size: 13px;
+    line-height: normal;
+}
+
+.temperature
+{
+    /*margin: 8px;    */
+    /*padding: 4px;*/
+    /*border-radius: 4px;*/
+    /*border-color: #f0ad4e;*/
+    /*border-width: -1px;*/
+    /*border-style: solid;*/
+    background-color: #ee2;
+    color: #722;
+    min-width: auto;
+    width: 60px;
+}
+
+.humidity
+{
+    /*margin-left: 2px;*/
+    /*padding: 4px;*/
+    /*border-radius: 4px;*/
+    background-color: #77f;
+    color: white;
+    min-width: auto;
+    width: 60px;
+}
+
+.filters-bar
+{
+    margin-top: 8px;
+    margin-bottom: 4px;
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #ddd;
+}
+
+.separator
+{
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #ddd;
+    width: 100%;
+    /* background-color: red; */
+    height: 1px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+label.house
+{
+    font-size: 18px;
+}
+.house-container {
+    margin: 5px;    
+}
+/* house > div
+{
+    margin-left: 5px;
+    margin-right: 5px;
+} */
+
+floor > div 
+{
+    margin-left: 5px;
+}
+
+room > div
+{    
+    margin-left: 5px;
+    border-style: solid;
+    border-width: 0px 0px 1px 0px;
+    border-color: #ddd;
+}
+    
+room > div > div
+{    
+    margin-left: 5px;        
+}
+
+label.floor
+{
+    font-size: 16px;
+    /*font-weight: normal;*/
+}
+
+label.room
+{
+    margin-top: 15px;
+    margin-bottom: 10px;
+    padding: 2px 8px 2px 8px;
+    font-size: 15px;
+    font-weight: bolder;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    /*border-radius: 3px;
+    border-color: #ccc;
+    border-style: solid;
+    border-width: 1px;
+    color:#777;*/
+}
+
+/* ahat: used when a house has only one floor, so the floor name is displayed next to the house*/
+.summary {
+    color: #999;
+}
+
+.header {
+  width: 100%;
+  height: 56px;
+  color: #FFF;
+  background: #3F51B5;
+  position: fixed;
+  font-size: 20px;
+  box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 2px 9px 1px rgba(0, 0, 0, 0.12), 0 4px 2px -2px rgba(0, 0, 0, 0.2);
+  padding: 16px 16px 0 16px;
+  will-change: transform;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -webkit-flex-direction: row;
+      -ms-flex-direction: row;
+          flex-direction: row;
+  -webkit-flex-wrap: nowrap;
+      -ms-flex-wrap: nowrap;
+          flex-wrap: nowrap;
+  -webkit-box-pack: start;
+  -webkit-justify-content: flex-start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+  -webkit-box-align: stretch;
+  -webkit-align-items: stretch;
+      -ms-flex-align: stretch;
+          align-items: stretch;
+  -webkit-align-content: center;
+      -ms-flex-line-pack: center;
+          align-content: center;
+  -webkit-transition: -webkit-transform 0.233s cubic-bezier(0, 0, 0.21, 1) 0.1s;
+  transition: -webkit-transform 0.233s cubic-bezier(0, 0, 0.21, 1) 0.1s;
+  transition: transform 0.233s cubic-bezier(0, 0, 0.21, 1) 0.1s;
+  transition: transform 0.233s cubic-bezier(0, 0, 0.21, 1) 0.1s, -webkit-transform 0.233s cubic-bezier(0, 0, 0.21, 1) 0.1s;
+  z-index: 1000; 
+}
+
+.header__title {
+  font-weight: 400;
+  font-size: 20px;
+  margin: 0;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+      -ms-flex: 1;
+          flex: 1; 
+}
+
+.main {
+  padding-top: 60px;
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; 
+}
+
+body {
+    background: #fafafa;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #333;
+}
+
+/* ==========================================================================
+Hide ng-cloak on page load, https://docs.angularjs.org/api/ng/directive/ngCloak
+========================================================================== */
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
+}
+
+/* ==========================================================================
+Development Ribbon
+========================================================================== */
+.ribbon {
+    background-color: #a00;
+    box-shadow: 0 0 10px #888;
+    left: -3.5em;
+    moz-box-shadow: 0 0 10px #888;
+    moz-transform: rotate(-45deg);
+    ms-transform: rotate(-45deg);
+    o-transform: rotate(-45deg);
+    overflow: hidden;
+    position: absolute;
+    top: 40px;
+    transform: rotate(-45deg);
+    webkit-box-shadow: 0 0 10px #888;
+    webkit-transform: rotate(-45deg);
+    white-space: nowrap;
+    width: 15em;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.ribbon a {
+    border: 1px solid #faa;
+    color: #fff;
+    display: block;
+    font: bold 81.25% 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    margin: 1px 0;
+    padding: 10px 50px;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 0 0 5px #444;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+Version number in navbar
+========================================================================== */
+.navbar-version {
+    font-size: 10px;
+    color: #444;
+}
+
+/* ==========================================================================
+navbar text
+========================================================================== */
+.navbar-default .navbar-brand {
+    color: #444;
+}
+
+/* ==========================================================================
+Browser Upgrade Prompt
+========================================================================== */
+.browserupgrade {
+    margin: 0.2em 0;
+    background: #ccc;
+    color: #000;
+    padding: 0.2em 0;
+}
+
+/* ==========================================================================
+Logo styles
+========================================================================== */
+.navbar-brand.logo {
+    padding: 5px 15px;
+}
+
+.logo .logo-img {
+    height: 45px;
+    display: inline-block;
+}
+
+/* ==========================================================================
+Main page styles
+========================================================================== */
+.hero-unit {
+    margin: 50px auto 0 auto;
+    width: 300px;
+    font-size: 18px;
+    font-weight: 200;
+    line-height: 30px;
+    background-color: #eee;
+    border-radius: 6px;
+    padding: 60px;
+}
+
+.hero-unit h1 {
+    font-size: 60px;
+    line-height: 1;
+    letter-spacing: -1px;
+}
+
+.hipster {
+    display: inline-block;
+    width: 347px;
+    height: 497px;
+    background: url("../images/hipster.png") no-repeat center top;
+    background-size: contain;
+}
+
+/* wait autoprefixer update to allow simple generation of high pixel density media query */
+@media
+only screen and (-webkit-min-device-pixel-ratio: 2),
+only screen and (   min--moz-device-pixel-ratio: 2),
+only screen and (     -o-min-device-pixel-ratio: 2/1),
+only screen and (        min-device-pixel-ratio: 2),
+only screen and (                min-resolution: 192dpi),
+only screen and (                min-resolution: 2dppx) {
+    .hipster {
+        background: url("../images/hipster2x.png") no-repeat center top;
+        background-size: contain;
+    }
+}
+
+/* ==========================================================================
+Generic styles
+========================================================================== */
+.error {
+    color: white;
+    background-color: red;
+}
+
+.pad {
+    padding: 10px;
+}
+
+.break {
+    white-space: normal;
+    word-break:break-all;
+}
+
+.voffset  { margin-top: 2px; }
+.voffset1 { margin-top: 5px; }
+.voffset2 { margin-top: 10px; }
+.voffset3 { margin-top: 15px; }
+.voffset4 { margin-top: 30px; }
+.voffset5 { margin-top: 40px; }
+.voffset6 { margin-top: 60px; }
+.voffset7 { margin-top: 80px; }
+.voffset8 { margin-top: 100px; }
+.voffset9 { margin-top: 150px; }
+
+.readonly {
+    background-color: #eee;
+    opacity: 1;
+}
+
+/* ==========================================================================
+make sure browsers use the pointer cursor for anchors, even with no href
+========================================================================== */
+a {
+    color: #1c0cf5;
+}
+
+a:hover, .hand, [jh-sort-by] {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+Metrics and Health styles
+========================================================================== */
+#threadDump .popover, #healthCheck .popover {
+    top: inherit;
+    display: block;
+    font-size: 10px;
+    max-width: 1024px;
+}
+
+#healthCheck .popover {
+    margin-left: -50px;
+}
+
+.health-details {
+    min-width: 400px;
+}
+
+/* ==========================================================================
+start Password strength bar style
+========================================================================== */
+ul#strengthBar {
+    display:inline;
+    list-style:none;
+    margin:0;
+    margin-left:15px;
+    padding:0;
+    vertical-align:2px;
+}
+
+.point:last {
+    margin:0 !important;
+}
+.point {
+    background:#DDD;
+    border-radius:2px;
+    display:inline-block;
+    height:5px;
+    margin-right:1px;
+    width:20px;
+}
+
+/* ==========================================================================
+Custom alerts for notification
+========================================================================== */
+.alerts .alert{
+    text-overflow: ellipsis;
+}
+.alert pre{
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+.alert .popover pre {
+    font-size: 10px;
+}
+
+.alerts .toast {
+    position: fixed;
+    width: 100%;
+}
+
+.alerts .toast.left {
+    left: 5px;
+}
+
+.alerts .toast.right {
+    right: 5px;
+}
+
+.alerts .toast.top {
+    top: 55px;
+}
+
+.alerts .toast.bottom {
+    bottom: 55px;
+}
+
+@media screen and (min-width: 480px) {
+    .alerts .toast {
+        width: 50%;
+    }
+}
+
+/* ==========================================================================
+entity tables helpers
+========================================================================== */
+/* Remove Bootstrap padding from the element
+   http://stackoverflow.com/questions/19562903/remove-padding-from-columns-in-bootstrap-3 */
+.no-padding-left { padding-left: 0 !important; }
+.no-padding-right { padding-right: 0 !important; }
+.no-padding-top { padding-top: 0 !important; }
+.no-padding-bottom { padding-bottom: 0 !important; }
+.no-padding { padding: 0 !important; }
+
+/* bootstrap 3 input-group 100% width
+   http://stackoverflow.com/questions/23436430/bootstrap-3-input-group-100-width */
+.width-min { width: 1% !important; }
+
+/* Makes toolbar not wrap on smaller screens
+ http://www.sketchingwithcss.com/samplechapter/cheatsheet.html#right */
+.flex-btn-group-container {
+   display: -webkit-flex;
+   display: flex;
+   -webkit-flex-direction: row;
+   flex-direction: row;
+   -webkit-justify-content: flex-end;
+   justify-content: flex-end;
+}
+
+.jh-table > tbody > tr > td {
+    /* Align text in td vertically (top aligned by Bootstrap) */
+    vertical-align: middle;
+}
+
+.jh-table > thead > tr > th > .glyphicon-sort, .jh-table > thead > tr > th > .glyphicon-sort-by-attributes, .jh-table > thead > tr > th > .glyphicon-sort-by-attributes-alt {
+    /* less visible sorting icons */
+    opacity: 0.5;
+}
+
+.jh-table > thead > tr > th > .glyphicon-sort:hover, .jh-table > thead > tr > th > .glyphicon-sort-by-attributes:hover, .jh-table > thead > tr > th > .glyphicon-sort-by-attributes-alt:hover {
+    /* full visible sorting icons and pointer when mouse is over them */
+    opacity: 1;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+entity detail page css
+========================================================================== */
+.dl-horizontal.jh-entity-details > dd {
+    margin-bottom: 15px;
+}
+
+@media screen and (min-width: 768px) {
+    .dl-horizontal.jh-entity-details > dt {
+        margin-bottom: 15px;
+    }
+
+    .dl-horizontal.jh-entity-details > dd {
+        border-bottom: 1px solid #eee;
+        padding-left: 180px;
+        margin-left: 0;
+    }
+}
+
+/* ==========================================================================
+ui bootstrap tweaks
+========================================================================== */
+.nav, .pagination, .carousel, .panel-title a {
+    cursor: pointer;
+}
+
+.datetime-picker-dropdown > li.date-picker-menu div > table .btn-default,
+.uib-datepicker-popup  > li > div.uib-datepicker > table .btn-default {
+    border: 0;
+}
+
+.datetime-picker-dropdown > li.date-picker-menu div > table:focus,
+.uib-datepicker-popup  > li > div.uib-datepicker > table:focus {
+    outline: none;
+}
+
+
+
+/* jhipster-needle-css-add-main JHipster will add new css style */
+
+/*material design icons section per https://materialdesignicons.com/bootstrap instructions*/
+.mdi::before {
+    font-size: 24px;
+    line-height: 14px;
+}
+.btn .mdi::before {
+    position: relative;
+    top: 4px;
+}
+.btn-xs .mdi::before {
+    font-size: 18px;
+    top: 3px;
+}
+.btn-sm .mdi::before {
+    font-size: 18px;
+    top: 3px;
+}
+.dropdown-menu .mdi {
+    width: 18px;
+}
+.dropdown-menu .mdi::before {
+    position: relative;
+    top: 4px;
+    left: -8px;
+}
+.nav .mdi::before {
+    position: relative;
+    top: 4px;
+}
+.navbar .navbar-toggle .mdi::before {
+    position: relative;
+    top: 4px;
+    color: #FFF;
+}
+.breadcrumb .mdi::before {
+    position: relative;
+    top: 4px;
+}
+.breadcrumb a:hover {
+    text-decoration: none;
+}
+.breadcrumb a:hover span {
+    text-decoration: underline;
+}
+.alert .mdi::before {
+    position: relative;
+    top: 4px;
+    margin-right: 2px;
+}
+.input-group-addon .mdi::before {
+    position: relative;
+    top: 3px;
+}
+.navbar-brand .mdi::before {
+    position: relative;
+    top: 2px;
+    margin-right: 2px;
+}
+.list-group-item .mdi::before {
+    position: relative;
+    top: 3px;
+    left: -3px
+}

@@ -5,7 +5,13 @@ $def with (mqtt_servers, containers, domains, item_types, items)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>eHome</title>
+
+    <link rel="stylesheet" href="/static/css/bootstrap.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-toggle.min.css">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
+
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/old.css">
     <script src="/static/scripts/paho-mqtt.min.js"></script>
     <script>
         // mqttServer data
@@ -14,12 +20,12 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 { id: $(loop.index-1), address: "$server['address']", port: "$server['port']", ws_port: "$server['ws_port']", username: "$(server['username'] if server['username'] is not None else "null" )", password: "$(server['password'] if server['password'] is not None else "null" )"},
         ];
 
-        var containers = [
+        var containersList = [
             $for container in containers:
                 { id: $(loop.index-1), containerName: "$container['containerName']", parentContainer: "$(container['parentContainer'] if container['parentContainer'] is not None else "null" )", guid: "$container['guid']" },
         ];
         // replace string null with actual null
-        containers.forEach(function(c){
+        containersList.forEach(function(c){
             if( c.parentContainer == "null" )
             {
                 c.parentContainer = null;
@@ -33,7 +39,16 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 
         var items = [
             $for item in items:
-                { id: $(loop.index-1), itemName: "$item['itemName']", itemMqttServer: $item['itemMqttServer'], itemContainer: "$item['itemContainer']", itemType: "$item['itemType']", publish: "$item['publish']", subscribe: "$item['subscribe']" },
+                { id: $(loop.index-1), itemName: "$item['itemName']", itemMqttServer: $item['itemMqttServer'], itemContainer: "$item['itemContainer']", type: "$item['itemType']", state: "UNKNOWN",
+                device : { 
+                    id: crypto.randomUUID(),
+                    name: "$item['itemName']",
+                    mqtt_publish_topic: "$item['publish']", 
+                    mqtt_subscribe_topic: "$item['subscribe']",
+                    state: { main: "UNAVAILABLE"  },
+                    lastUpdate : null
+                },
+            }
         ];
             
         const client = {};
@@ -66,7 +81,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 configuration_str = message.payloadString;
                 let configuration = JSON.parse(configuration_str);
                 mqttServers = configuration.mqttServers;
-                containers = configuration.containers;
+                containersList = configuration.containers;
                 item_types = configuration.item_types;
                 items = configuration.items;
             }
@@ -80,16 +95,947 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             // ul.appendChild(li);
         }
 
+        const customElementDirectives = [
+                {
+                    elements: ["container"], 
+                    attributesToContext: [
+                        { attribute: "container", contextProperty: 'c'},
+                        { attribute: "level", contextProperty: 'level'},
+                        { attribute: "show-label", contextProperty: 'showLabel'},
+                        { attribute: "expandAllChildren", contextProperty: 'expandAllChildren'},
+                        { attribute: "is-collapsed-house", contextProperty: 'isCollapsedHouse'},
+                        { attribute: "filter", contextProperty: 'filter'},
+                        { attribute: "show-mqtt-topics", contextProperty: 'showMqttTopics'}
+                    ]
+                },
+                {
+                    elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto"], 
+                    attributesToContext: [
+                        { attribute: "item", contextProperty: 'i'},
+                        { attribute: "filter", contextProperty: 'filter'},
+                        { attribute: "is-collapsed-house", contextProperty: 'isCollapsedHouse'},
+                        { attribute: "is-collapsed-floor", contextProperty: 'isCollapsedFloor'},
+                        { attribute: "is-collapsed-room", contextProperty: 'isCollapsedRoom'},
+                        { attribute: "show-mqtt-topics", contextProperty: 'showMqttTopics'}
+
+                    ]
+                }                
+            ];
+
+        var language = 'el';
+        // Observe changes in variables and recompile directives accordingly
+        var containers = [];
+        var hiddenContainers = [];
+        var proxyContainerRecompileNgClass = false;
         window.onload = function () {
             mqttServers.forEach(connectToMqtt);
+            console.log("window.onload");
+            
+            hiddenContainers = generateContainerItemTree(containersList, null);
+            containers = []; // these will be the proxies
+            hiddenContainers.forEach(hc => { containers.push(createProxiedContainer(hc)); });
+
+            // populateConfiguration(document.getElementById("content"));      
+            // return;
+
+            // containers = containersList;
+            // document.getElementById('content').innerHTML=
+            // getContentsFromFile('static/elements/container.html').response;
+            while(documentContainsNgRepeat() || documentContainsReplaceableCustomElements())
+            // for(let i = 0 ; i < 2 ; i++)
+            {
+                console.log((documentContainsNgRepeat() || documentContainsReplaceableCustomElements()));
+                compileNgIf();
+                compileNgRepeat();
+                compileCustomElements();
+            // evalValues(null, document.getElementById('content'));
+
+            }
+            compileNgInit();
+            compileNgShow();
+            compileNgClass();
+            evalValues(null, document.getElementById('content'));
+            compileNgClick();
+            
+            // for reacting to changes in the document
+            const observer = new MutationObserver(() => {
+                // TODO
+            });
+
+            observer.observe(document.getElementById("content"), {
+                attributes: true,
+                childList: true,
+                subtree: true
+            });
+
+            proxyContainerRecompileNgClass = true;
+            console.log("full text: ", document.getElementById("content").innerHTML);
         };
+
+        function createProxy(obj) {
+            return new Proxy(obj, {
+                get(target, property, receiver) {
+                    const value = Reflect.get(target, property, receiver);
+                    // console.log(`Getting $${property}: `,value);
+                    return value;
+                },
+                set(target, property, value, receiver) {
+                    // console.log(`Setting $${property} to `,value);
+                    const success = Reflect.set(target, property, value, receiver);
+                    if (success) {
+                        // console.log("set operaton was successfull");
+                        if(proxyContainerRecompileNgClass)
+                        {
+                            // proxyContainerRecompileNgClass = false;
+                            compileNgClass();
+                            // proxyContainerRecompileNgClass = true;
+                        }
+                    }
+                    return success;
+                }
+            });
+        }
+
+        function createProxiedContainer(obj) {
+            // Create a proxy for the object itself
+            const proxiedObject = createProxy(obj);
+
+            // Create proxies for each property that is an object or an array
+            for (const key in proxiedObject) {
+                if (typeof proxiedObject[key] === 'object' && proxiedObject[key] !== null) {
+                    proxiedObject[key] = createProxiedContainer(proxiedObject[key]);
+                }
+            }
+
+            return proxiedObject;
+        }
+
+        function documentContainsReplaceableCustomElements()
+        {
+            const ces = document.querySelectorAll(customElementDirectives.map((ced) => {return ced.elements;}).flat().join(", "));
+            if(ces.length == 0)
+            {
+                return false;
+            }
+
+            let htmlFilesExist = true;
+            ces.forEach((c) => {
+                let text = getContentsFromFile('static/elements/' + c + '.html');
+                htmlFilesExist = htmlFilesExist && text.found;
+            })
+            return htmlFilesExist;
+        }
+
+        function documentContainsNgRepeat()
+        {
+            return document.querySelectorAll('[ng-repeat]').length > 0;
+        }
+
+        function collectAttributes(node, attributes, textNodes) {
+            // Collect attributes from the current element
+            // console.log("node: ", node, " has " + node.attributes.length + " attribues: ", node.attributes);
+            if (node.nodeType === Node.ELEMENT_NODE && node.attributes.length > 0){
+                for (let i = 0; i < node.attributes.length; i++) {
+                    const attribute = node.attributes[i];
+                    if (attribute.name.startsWith('ng-') ||
+                        attribute.name === "data-translate" ||
+                        customElementDirectives.map(c => c.attributesToContext.map(a => a.attribute))
+                            .flat()
+                            .some(a => a.toLowerCase() === attribute.name.toLowerCase() )
+                    ) {
+                        attributes.push(attribute);
+                    }
+                }
+            }
+
+            // If the node is a text node, collect it
+            if (node.nodeType === Node.TEXT_NODE && node.textContent.includes("{{")) {
+                textNodes.push(node);                
+            }
+
+            // Recursively collect attributes from child nodes
+            // console.log("element: ", element, " has " + element.children.length + ": ", element.children);
+            if (node.hasChildNodes()) {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    collectAttributes(node.childNodes[i], attributes, textNodes);
+                }
+            }
+        }
+
+        function replaceWordAWithWordB(template, wordA, wordB) {
+            // Example usage:
+            // const template = document.createElement('div');
+            // template.innerHTML = `
+            //     <div ng-attr1="wordA" ng-attr2="wordA">wordA.wordA</div>
+            //     <div>{{expression1 + wordA}}</div>
+            //     <div>{{expression2 + wordA}}</div>
+            // `;
+            // const wordA = "wordA";
+            // const wordB = "wordB";
+            // replaceWordAWithWordB(template, wordA, wordB);
+            // console.log(template.outerHTML);
+
+            const attributes = [];
+            const textNodes = [];
+            collectAttributes(template, attributes, textNodes);
+            // console.log("collected attributes: ", attributes);
+            // console.log("collected textNodes: ", textNodes);
+            const content = template.innerHTML;
+
+            // console.log("replacing '" + wordA + "' with '" + wordB + "' in all collected attributes");
+            // Loop through all attributes
+            for (let i = 0; i < attributes.length; i++) {
+                const attributeName = attributes[i].name;
+                const attributeValue = attributes[i].value;
+
+                // Replace wordA with wordB in attribute values
+                // const replacedAttributeValue = attributeValue.replace(new RegExp(`([^.]|^)$${wordA}([^.]|$$)`, 'g'), function(match, before, after) {
+                //     return before + wordB + after;
+                // });
+                const replacedAttributeValue = attributeValue.replace(new RegExp(`(?<!\\.)\\b$${wordA}\\b`, 'g'), wordB);
+
+                // Update the attribute value
+                // console.log("updating " + attributeName + ", old value: '" + attributeValue + "', new value: '" + replacedAttributeValue + "'" );
+                attributes[i].value = replacedAttributeValue;
+            }
+            // console.log("template now is: ", template.innerHTML);
+            // Replace wordA with wordB in content (within '{{' and '}}')
+            textNodes.forEach(t =>{
+                t.textContent = t.textContent.replace(new RegExp(`(?<!\\{\\{.*\\.)\\b$${wordA}\\b(?=.*\\}\\})`, 'g'), wordB);
+            });
+            // console.log("collected attributes after replacement: ", attributes);
+
+            // const replacedContent = template.innerHTML.replace(new RegExp(`(?<!\\.{{.*)\\b$${wordA}\\b(?=.*}}(?!.*}})`, 'g'), wordB);
+            
+            // const replacedContent = content.replace(new RegExp(`{{(.*?)$${wordA}(.*?)}}`, 'g'), function(match, before, after) {
+            //     return `{{$${before}$${wordB}$${after}}}`;
+            // });
+
+            // Update the content
+            // template.innerHTML = replacedContent;
+        }
+
+        function compileCustomElements()
+        {
+            const elements = document.querySelectorAll(customElementDirectives.map((ced) => {return ced.elements;}).flat().join(", "));
+            elements.forEach((element) => {
+                // console.log("attributes: ", element.attributes, " of element:", element);                
+                let text = getContentsFromFile('static/elements/' + element.localName + '.html');
+                if(!text.found)
+                {
+                    console.log('No html file found for ' + element.localName + ' in static/elements');
+                    return true;
+                }
+                // console.log("text from file: " + text.response);
+                let template = document.createElement('template');
+                template.innerHTML = text.response;
+
+                customElementDirectives
+                .find(cd => {return cd.elements.indexOf(element.localName) > -1;})
+                .attributesToContext.forEach(a2c =>{
+                    // console.log("template was: " + template.innerHTML);
+                    // copy computed values of attributes already stored in context with key = attribute.name
+                    // into new (or existing) context keys for use in children of element
+                    let oldValue = element.getAttribute(a2c.attribute);
+                    if(oldValue != null)
+                    {
+                        // console.log(a2c.attribute + " old value: " + oldValue);
+                        const newValue = evaluateAndCheckPrimitive(oldValue);
+                        if(!newValue.error && newValue.isPrimitive)
+                        {
+                            // console.log("newValue: " + newValue.result );
+                            element.setAttribute(a2c.attribute, newValue.result);
+                        }
+                    }
+
+                    replaceWordAWithWordB(template.content, a2c.contextProperty, element.getAttribute(a2c.attribute));
+                    // console.log("template now is: " + template.innerHTML);
+                });
+               
+                element.parentNode.appendChild(template.content.cloneNode(true));
+                element.remove();
+            });
+        }
+
+        function compileNgInit() {
+            const elements = document.querySelectorAll('[ng-init]');
+            elements.forEach(element => {
+                const expression = element.getAttribute('ng-init');
+
+                const scope = {}; // Create an object to represent the scope
+
+                // Evaluate the expression in the scope context
+                // Here, we use an immediately invoked function expression (IIFE) to create a local scope
+                // (function(scope) {
+                    // Use eval() to evaluate the expression in the scope context
+                    try
+                    {
+                        // define arrays before assignment
+                        const arrays = expression.split(";").map(s => {a = s.split("=")[0].trim(); if(a.indexOf("[") > -1) return a.split("[")[0]; else return null;}).filter(a => a != null && a != undefined).forEach(v => {
+                            let defExpr = "window." + v + "=[];";
+                            console.log("compileNgInit declares array: '" + defExpr + "'");
+                            console.log(eval(defExpr));
+                        });
+
+                        console.log("compileNgInit evals init: '" + expression + "'");
+                        eval(expression);
+                    }
+                    catch(e)
+                    {
+                        console.warn("Error in compileNgInit for eval expr: '" + expression + "'");
+                        throw(e);
+                    }
+                // })(scope);
+
+                // Copy variables from the scope object to the current scope
+                for (const key in scope) {
+                    if (scope.hasOwnProperty(key)) {
+                        window[key] = scope[key];
+                    }
+                }
+            });
+        }
+
+        function compileNgClick() {
+            const elements = document.querySelectorAll('[ng-click]');
+            elements.forEach(element => {
+                const clickHandler = element.getAttribute('ng-click');
+                if (!!clickHandler) {
+                    // console.log("adding click eventListenr '" + clickHandler + "' to element: ", element);
+                    element.addEventListener('click', function() {
+                        // console.log("eval clickHandler: ", clickHandler);
+                        eval(clickHandler);
+                    });
+                }
+            });
+        }
+
+        function compileNgClass() {
+            const elements = document.querySelectorAll('[ng-class]');
+            elements.forEach(element => {
+                // const ngClass = element.getAttribute('ng-class').split("'").join("\"").split(":").map(s => s.trim()).join(": \"").split(",").map(s => s.trim()).join("\", ").split("}").map(s => s.trim()).join("\" }");
+                const ngClass = "{" + element.getAttribute('ng-class').slice(1,-1).split(",").map(s => s.split(":").map(s => s.trim())).map(s => {return s[0].split("'").join("\"") + " : \"" + s[1] +"\"";}).join(", ") + "}";
+                try
+                {
+                    // console.log("ngClass '" + ngClass + "' for element: ", element);
+                    const classesObject = JSON.parse(ngClass);
+                    Object.keys(classesObject).forEach(className => {
+                        const condition = eval(classesObject[className]);
+                        className.split(" ").forEach(cn => {
+                        if (condition) {
+                                element.classList.add(cn);
+                            } else {
+                                element.classList.remove(cn);
+                            }
+                        });
+                    });
+                }
+                catch(e)
+                {
+                    console.warn("Error in compileNgClass for ngClass='" + ngClass + "'");
+                    throw(e);
+                }
+            });
+        }
+
+        // Compile ng-repeat directive
+        function compileNgRepeat() {
+            const elements = document.querySelectorAll('[ng-repeat]');
+            elements.forEach(element => {
+                const ngRepeat = element.getAttribute('ng-repeat');
+                if (ngRepeat) {
+                    const parts = ngRepeat.split(' in ');
+                    const singleItemExpression = parts[0].trim();
+                    const itemCollectionExpression = parts[1].trim();
+                    // console.log("singleItemExpression: '" + singleItemExpression + "', itemCollectionExpression: '" + itemCollectionExpression + "'");
+                    const items = evaluateExpression(itemCollectionExpression);
+                    items.forEach((item,i) => {
+                        const newItem = element.cloneNode(true);
+                        newItem.removeAttribute('ng-repeat');
+                        const replacementSingleItemExpression = itemCollectionExpression + "[" + i +"]";
+                        newItem.innerHTML = replaceWordExceptAfterDotInExpr( newItem.innerHTML, singleItemExpression, replacementSingleItemExpression);
+                        Array.from(newItem.children).forEach((c) => {
+                            Array.from(c.attributes).forEach(function(a) {                                
+                                // console.log("replacing '" + a.value + "' with '" + newValue + "'");
+                                a.value = replaceWordExceptAfterDot(a.value, singleItemExpression, replacementSingleItemExpression);
+                            })
+                        });
+                        element.parentNode.appendChild(newItem);
+                    });
+                    element.parentNode.removeChild(element);
+                }
+            });
+        }
+
+        function compileNgShow() {
+            const elements = document.querySelectorAll('[ng-show]');
+            elements.forEach(element => {
+                const condition = element.getAttribute('ng-show');
+                if (condition) {
+                    const isVisible = evaluateCondition(condition);
+                    // if (!isVisible) {
+                    //     element.parentNode.removeChild(element);
+                    // }
+                    if (!isVisible) {
+                        element.style.display = 'none';
+                    } else {
+                        element.style.display = ''; // Restore default display
+                    }
+                }
+            });
+        }
+
+        function compileNgIf() {
+            const elements = document.querySelectorAll('[ng-if]');
+            elements.forEach(element => {
+                const condition = element.getAttribute('ng-if');
+                element.removeAttribute('ng-if');
+                if (condition) {
+                    const isVisible = evaluateCondition(condition);
+                    // if (!isVisible) {
+                    //     element.parentNode.removeChild(element);
+                    // }
+                    if (!isVisible) {
+                        element.style.display = 'none';
+                    } else {
+                        element.style.display = ''; // Restore default display
+                    }
+                }
+            });
+        }
+
+        function replaceWordExceptAfterDotInExpr(inputString, wordA, wordB)
+        {
+            const strCopy = inputString.split("{{");
+            if(strCopy.length < 2)
+            {
+                return inputString;
+            }
+
+            inputString = strCopy.map((s) => {
+                let parts = s.split("}}"); 
+                if(parts.length == 1)
+                    return parts[0]; /*There was a {{ at the beginning of the line*/
+                try
+                {
+                    console.log("Will replace '" + wordA + "' with '" + wordB + "' in '" + parts[0] + "'" );
+                    const newValue = replaceWordExceptAfterDot(parts[0], wordA, wordB) + parts[1]; 
+                    console.log("returning " + newValue);
+                    return newValue;
+                }
+                catch(e)
+                {
+                    console.error(e);
+                    return s;
+                }
+            }).join("");
+
+            console.log("string after replace: '" + inputString + "'");
+            return inputString;
+        }
+
+        // Evaluate condition expression
+        function evaluateCondition(condition) {
+            try
+            {
+                return !!eval(condition);
+            }
+            catch(e)
+            {
+                console.warn("Error at eval condition:" + condition);
+                throw(e);
+            }
+        }
+
+        // Evaluate expression
+        function evaluateExpression(expression) {
+            // console.log("eval expression:" + expression);
+            try
+            {
+                return eval(expression);
+            }
+            catch(e)
+            {
+                console.warn("Error at eval expression:" + expression);
+                throw(e);
+            }
+        }
+        
+        function populateConfiguration(root, parentGuid = null, level = 1)
+        {
+            let html = "";
+            containers.forEach(function(c, index){
+                console.log("populating for container: " + c.name);
+                if(c.parentContainer === parentGuid) {
+                    const template = document.createElement('template');
+                    template.innerHTML = getContentsFromFile('static/elements/container.html').response;
+                    // console.log(template.innerHTML);
+                    const result = template.content.children;
+                    // console.log(result);
+                    // Then return either an HTMLElement or HTMLCollection,
+                    // based on whether the input HTML had one or more roots.
+                    if (result.length === 1)
+                    {
+                        let e = processElement(
+                            {showLabel: showLabel, c: c, level: level, filter: filter},
+                            result[0]);
+                        if(e != null)
+                        {
+                            e.id = c.guid;
+                            if(parentGuid == null)
+                            {
+                                e.className = "house-container";
+                            }
+                            console.log("Adding element ", e, " to root ", root);
+                            root.append(e);
+                            populateConfiguration(e, c.guid, level + 1);
+                        }
+                    }
+                    // else
+                    // {
+                    //     root.append(result);
+                    //     for(let i = 0 ; i < result.length ; i++)
+                    //     {
+                    //         populateConfiguration(result[i], c.guid);
+                    //     }
+                    // }                    
+                }
+            });
+        }
+
+        function evaluateAndCheckPrimitive(code) 
+        {
+            // console.log("evaluateAndCheckPrimitive expr [" + code + "], with ", context);
+            let response = {};
+            try
+            {
+                response['result'] = eval(code);
+                const type = typeof response['result'];
+                response['error'] = false;
+                response['type'] = type;
+                response['isPrimitive'] = type !== 'object';
+            }
+            catch(e)
+            {
+                response['error'] = true;
+            }
+            return response;
+            // if (type === 'object') {
+            //     // if (result === null) {
+            //     //     return 'null';
+            //     // } else if (Array.isArray(result)) {
+            //     //     return 'array';
+            //     // } else {
+            //     //     return 'object';
+            //     // }
+            //     return false
+            // } 
+            
+            // // it is a primitive
+            // return true;
+        }
+
+        // evalRepeat will return false if the element was removed in order
+        // to indicate that its children should not be processed any further
+        function evalRepeat(context, element)
+        {
+            let rep = element.getAttribute('ng-repeat');
+            if(rep == null)
+            {
+                return true;
+            }
+            console.log("evalRepeat for ", element)
+            let parts = rep.trim().split(" in ");
+            console.log("parts:", parts);
+            let newContext = {...context};
+            let length = eval(addContextToExpression(context, parts[1]) + ".length");
+            console.log("length: " + addContextToExpression(context, parts[1]) + ".length: " + length);
+            if(length == 0)
+            {
+                element.remove();
+                console.log("Removed ", element, " and returnig from evalRepeat");
+                return false;
+            }
+
+            element.removeAttribute('ng-repeat');
+            for(let i = 0 ; i < length ; i++)
+            {
+                newContext[parts[0]] = eval(addContextToExpression(context, parts[1]) + "[" + i + "]");
+                console.log("evalRepeat newContext: ", newContext);
+                let newElement = element;
+                if(i > 0)
+                {
+                    newElement = element.cloneNode(true);
+                    element.parentNode.appendChild(newElement);
+                }
+                console.log("newElement: ", newElement);
+                console.log("newElement.children: ", newElement.children);
+                Array.from(newElement.children).forEach(c => {
+                    Array.from(c.attributes).forEach(a => {
+                        // replace any occurences of ng-repeat value with the ng-repeat-expr[i]
+                        a.value = replaceWordExceptAfterDot(a.value, parts[0], parts[1] + "[" + i + "]");
+                        // if(a.value == parts[0])
+                        // {
+                        //     a.value = parts[1] + "[" + i + "]";
+                        // }
+                    });
+                });
+                console.log("Will now process newElements from evalRepeat");
+                processElement(newContext, newElement);
+            }
+            // element.parentNode.removeChild(element);
+            return true;
+        }
+
+        function replaceWordExceptAfterDot(inputString, wordA, wordB) {
+            // Example usage:
+            // const inputString = "This is a wordA. Another wordA here. But not .wordA.";
+            // const replacedString = replaceWordExceptAfterDot(inputString, "wordA", "wordB");
+            // console.log(replacedString);
+            
+            // \b is a word boundary to ensure that the word is matched as a whole word.
+            // (?<!\.) is a negative lookbehind assertion that ensures the word is not preceded by a dot.
+            // g flag is used to perform a global search (i.e., replace all occurrences).
+            const regex = new RegExp(`(?<!\\.)\\b$${wordA}\\b`, 'g');
+            return inputString.replace(regex, wordB);
+        }
+
+        function evalTranslation(element)
+        {
+            let dtr = element.getAttribute("data-translate");
+            if(dtr == null)
+            {
+                return;
+            }
+
+            let parts = dtr.split(".");
+            let tr = JSON.parse(getContentsFromFile('static/i18n/' + language + '/' + parts[0] + '.json').response);
+            // console.log(tr);
+            element.innerHTML = eval("tr." + dtr);
+        }
+
+        function evalClass(context, element)
+        {
+            let cls = element.getAttribute("ng-class");
+            if(cls)
+            {
+                cls = cls.replace(/^(\{+)/, '').replace(/(\}+)$$/, '').split(",").map((c) => c.trim());
+                for(var i = 0 ; i < cls.length ; i++)
+                {
+                    let parts = cls[i].split(':').map((s) => s.trim());
+                    const expr = addContextToExpression(context, parts[1]);
+                    try
+                    {
+                        // console.log("Eval: " + expr + ", with context: ", context);
+                        if(eval(expr))
+                        {
+                            element.className = element.className + " " + parts[0].replace(/^(['"]+)/, '').replace(/(['"]+)$$/, '').trim()
+                        }
+                    }
+                    catch(e)
+                    {
+                        console.error(e);
+                    }
+                }
+            }
+        }
+
+        function evalValues(context, element)
+        {
+            if(element.innerHTML.length == 0)
+            {
+                return;
+            }
+
+            const strCopy = element.innerHTML.split("{{");
+            if(strCopy.length < 2)
+            {
+                return;
+            }
+
+            // console.log("Evaluating innerHTML: ", strCopy, " with context: ", context);
+            element.innerHTML = strCopy.map((s) => {
+                let parts = s.split("}}"); 
+                if(parts.length == 1)
+                    return parts[0]; /*There was a {{ at the beginning of the line*/
+
+                const expr = parts[0];
+                if(context != null) 
+                {
+                    expr = addContextToExpression(context, parts[0]);
+                }
+                try
+                {
+                    // console.log("Will eval " + expr );
+                    return eval(expr) + parts[1]; 
+                }
+                catch(e)
+                {
+                    console.warn("Error in evalValues for expr: '" + expr + "' of element: ", element);
+                    console.error(e);
+                    return s;
+                }
+            }).join("");
+        }
+
+        function addContextToExpression(context, expr)
+        {
+            const prefix = "context.";
+            const words = Object.keys(context);
+            return addPrefixToWordsInExpression(prefix, words, expr)
+        }
+
+        function addPrefixToWordsInExpression(prefix, words, expr)
+        {
+            const regex = new RegExp(`(?<!\\.)\\b($${words.join('|')})\\b`, 'g');
+            return expr.replace(regex, `$${prefix}$$1`);
+        }
+
+        function evalIf(context, element)
+        {
+            let _if = element.getAttribute("ng-if");
+            if(_if)
+            {
+                try
+                {
+                    const expr = addContextToExpression(context, _if);
+                    // console.log("Eval: " + expr + ", with context: ", context);
+                    // console.log(eval(expr));
+                    if(!eval(expr))
+                    {
+                        // console.log("Processing returns false");
+                        element.style.visibility = "hidden";
+                        // element.replaceWith(document.createElement("span"));
+                        return false;
+                    }
+                }
+                catch(e)
+                {
+                    console.log("Eval of '" + _if + "' of element: ", element, " with context: ", context );
+                    console.error("generated error; ", e);
+                }
+            }
+            return true;
+        }
+
+        function evalAttributesByContext(context, element)
+        {
+            if(!('attributes' in element))
+            {
+                return;
+            }
+            // console.log(element.attributes);
+            // console.log("Before evalAttributesByContext of element ", element, " context: ", context);
+            // evaluate attribute values if the result is a primitive e.g. int
+            // In processTag they will be stored in context and will be most likely used 
+            // in child elements e.g. in items which are children of container
+            Array.from(element.attributes).forEach(a => {
+                let evaluation = evaluateAndCheckPrimitive(addContextToExpression(context, a.value));
+                if(!evaluation.error)// && evaluation.isPrimitive)
+                {
+                    // console.log(a.localName + ".value was " + a.value + " and now is " + evaluation.result);
+                    // a.value = evaluation.result;
+                    context[a.localName] = evaluation.result;
+                    // console.log("context[" + a.localName + "]=("+addContextToExpression(context, a.value)+")" + context[a.localname]);
+                }
+            });
+            // console.log("After evalAttributesByContext context: ", context);
+        }
+
+        function processTag(context, element)
+        {
+            // attributes of #element# will be stored in the context and their value will replaced (before
+            // evaluating) the corresponding 
+            var contextDirectives = [
+                {
+                    element: "container", 
+                    attributesToContext: [
+                        { attribute: "container", contextProperty: 'c'}
+                    ]
+                },
+                {
+                    element: "item", 
+                    attributesToContext: [
+                        { attribute: "item", contextProperty: 'i'}
+                    ]
+                }
+            ];
+            const elementFiles = new Set(['container', 'item']);
+            if(!contextDirectives.map(cd => cd.element).includes(element.localName))
+            {
+                return true;
+            }
+            // evalAttributesByContext(context, element);
+            console.log("processTag for ", element, " with context ", context);
+
+            let text = getContentsFromFile('static/elements/' + element.localName + '.html');
+            if(!text.found)
+            {
+                console.log('No html file found for ' + element.localName + ' in static/elements');
+                return true;
+            }
+
+            // let newContext = {...context};
+            context = {...context};
+            contextDirectives
+                .find(cd => {return cd.element === element.localName;})
+                .attributesToContext.forEach(a2c =>{
+                    // copy computed values of attributes already stored in context with key = attribute.name
+                    // into new (or existing) context keys for use in children of element
+                    context[a2c.contextProperty] = context[a2c.attribute];
+                });
+
+            console.log("newContext: ", context);
+            const template = document.createElement('template');
+            template.innerHTML = text.response;
+            // console.log(template.innerHTML);
+            const result = template.content.children;
+            console.log("result: ", result);
+            // Array.from(template.content.children).forEach(c => {element.parentNode.appendChild(c);});
+            
+            // element = processElement(context, result[0]);
+            // Array.from(result).slice(1).forEach(r => element.parentNode.appendChild(r));
+            // console.log("removing ", element);
+            // element.remove();
+            // // Array.from(result).forEach(r => processElement(context, r));
+            // return true;
+
+            console.log("will append " + (result.length) + " children to parent ", element.parentNode, " of element ", element);
+            for(let i = 0 ; i < result.length ; i++)
+            {
+                // console.log("appending ", result[i], " to ", element.parentNode);
+                // element.parentNode.appendChild(result[i]);
+                let e = processElement(context, result[i]);
+                if(e != null)
+                {
+                    // e.id = c.guid;
+                    console.log("appending ", e, " to ", element.parentNode);
+                    element.parentNode.appendChild(e);
+                }                
+            }
+            console.log("removing ", element);
+            element.remove();
+            // throw new Error('Forced stop');
+            // let pn = element.parentNode;
+            // element.remove();
+            // Array.from(template.content.children).forEach(c => {
+            //     console.log("in place of " + element.localName + " adding ", c);
+            //     // element.parentNode.appendChild(c);
+            // });
+            return false;
+        }
+
+        function processElement(context, element)
+        {
+            const elementFiles = new Set(['container', 'item']);
+            // console.log("Processing element: ", element, ", type: ", typeof element);
+            if(!(element instanceof HTMLElement) || !('getAttribute' in element))
+            {
+                console.log("element is not HTMLElement or does not have 'getAttribute'. Exiting.");
+                return element;
+            }
+
+            if(elementFiles.has(element.localName))
+            {
+                console.log("Processing element: ", element, " with context: ", context);
+            }
+
+            evalAttributesByContext(context, element);
+            if(!evalIf(context, element))   //if true element was remmoved
+            {
+                return null;
+            }
+            let processChildren = true;
+            evalValues(context, element);
+            evalClass(context, element);
+            evalTranslation(element);
+            processChildren = processChildren && evalRepeat(context, element);
+            processChildren = processChildren && processTag(context, element);
+            if(processChildren)
+            {
+                Array.from(element.children).forEach((c) => {
+                    // console.log("Will process ", c ," child of ", element);
+                    processElement(context,c);
+                });
+            }
+            return element;
+        }
+
+        function getContentsFromFile(filename)
+        {
+            // console.log("Getting contents of '" + filename);
+            let result = {response:  "", found: false};
+            if (filename) {
+                xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4) {
+                        if (this.status == 200) 
+                        {
+                            // console.log("Returning contents of " + filename);
+                            result.response = this.responseText;
+                            result.found = true;
+                        }
+                        if (this.status == 404) 
+                        {
+                            console.log("Returning File not found.");
+                            result.response = "File not found.";
+                            result.found = false;
+                        }
+                    }
+                }
+                xhttp.open("GET", filename, false); //synchronous call
+                xhttp.send();
+                return result;
+            }
+            return "No file specified."
+        }
+
+        function generateContainerItemTree(containersList, parentId) {
+                let containers = [];
+                containersList.forEach(function(c) {
+                    if (c.parentContainer === parentId) {
+                        let container = createGuiContainer(c)
+                        containers.push(container);                       
+                    }
+                });
+                return containers;
+            }
+
+        function createGuiContainer(containerListElement)
+        {
+            return {
+                guid: containerListElement.guid,
+                parentContainer: containerListElement.parentContainer,
+                name: containerListElement.containerName,
+                containers: generateContainerItemTree(containersList, containerListElement.guid),
+                items: items.filter(function(item){
+                            return item.itemContainer == containerListElement.guid;
+                        }),
+                gui : {
+                    collapsed: false,
+                    allChildrenExpanded: true,
+                    showMqttTopics: false,
+                    filter: {
+                        DOOR: true,
+                        WINDOW: true,
+                        LIGHT: true,
+                        CLIMATE: true,
+                        COVER: true,
+                        ALARM: true,
+                        CAMERA: true,
+                        MOTION: true                        
+                    }
+                }
+            };
+        }
+
     </script>
 </head>
 <body>
-    <h1>MQTT Client</h1>
-    <!-- <ul id="messages"></ul> -->
-    <script>
-        
-    </script>
+    <div id="content">
+        <div ng-repeat="o in containers">
+            <container container='o' level="1" show-label="true" expandAllChildren="true" is-collapsed-house="false" filter="filter" show-mqtt-topics="showMqttTopics"/>
+        </div>
+    </div>
 </body>
 </html>

@@ -87,11 +87,11 @@ item_types = [
  
 render = web.template.render('templates/')
 
-def publish_mqtt(server, i):
+def publish_mqtt(server, data):
     client = mqtt.Client()
     try:
         client.connect(host=server['address'], port=int(server['port']))
-        client.publish("test/topic", "Hello MQTT!{}".format(i))
+        client.publish("test/topic", data)
         client.disconnect()
         print(f"Published message successfully to {server['address']}")
     except Exception as e:
@@ -107,8 +107,14 @@ class Messenger:
         thread.start()
 
     def publish_mqtt_thread(self):
+        data = {
+            'mqtt_servers': mqtt_servers,
+            'containers': containers,
+            'item_types': item_types,
+            'items': items
+        }
         for server in mqtt_servers:
-            publish_mqtt(server, self.i)
+            publish_mqtt(server, json.dumps(data, indent=4))
         self.i = (self.i + 1) % 100
 
 

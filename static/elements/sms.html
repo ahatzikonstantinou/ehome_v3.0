@@ -1,0 +1,91 @@
+<div ng-show="showMqttTopics">
+    <span class="item">[{{i.type}}]</span>
+    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+</div>
+{{$uibModal}}
+<div style="overflow: auto;" ng-init="showMessages=false; deleteSmsList={};">
+    <div class="device-label">
+        <span class="glyphicon glyphicon-envelope device-icon"/>
+        <span class="device-name">{{i.name}}</span>
+    </div>
+    <div class="state-container">
+        <span class="info state">
+            <span data-translate="sms.total"/>
+            <span>{{i.device.messages.length}}</span>
+        </span>
+        <span class="state" ng-class="{ 'warning': i.device.newSmsCount() > 0, 'info': i.device.newSmsCount() == 0 }">
+            <span data-translate="sms.new"/>
+            <span>{{i.device.newSmsCount()}}</span>
+        </span>
+        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate | date: 'dd/MM/yyyy HH:mm') : ''}}</span>            
+    </div>
+    <div class="device-buttons">
+        <button type="button" class="btn btn-xs btn-default" ng-click="showMessages=!showMessages; i.device.clearNew( !showMessages )">
+            <span class="glyphicon glyphicon-collapse-up" ng-if="showMessages"/>
+            <span class="glyphicon glyphicon-collapse-down" ng-if="!showMessages"/>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.refresh()">
+            <span class="glyphicon glyphicon-transfer"/>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.openSendDialog( i.device )">
+            <span class="glyphicon glyphicon-send"/>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.delete()" ng-disabled="i.device.deleteSmsList.length == 0">
+            <span class="glyphicon glyphicon-trash"/>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.cleanRefresh()">
+            <span class="glyphicon glyphicon-refresh"/>
+        </button>
+    </div>
+</div>
+<!-- <div class="table-responsive" ng-show="showMessages">
+    <table class="table table-striped">
+        <tbody>
+            <tr ng-repeat="sms in i.device.messages.slice().reverse() track by sms.hash">
+                <td>
+                    <input type="checkbox" ng-model="deleteSmsList[sms.hash]" ng-change="i.device.updateDelete( sms.hash, deleteSmsList[sms.hash] )"/>
+                     <span class="sms-id badge">{{sms.id}} - {{sms.hash}}</span>
+                </td>
+                <td>
+                    <div>
+                        <span class="sms-type" ng-class="{ 'glyphicon glyphicon-arrow-right incoming': sms.type == 'deliver', 'glyphicon glyphicon-arrow-left outgoing': sms.type == 'submit', 'glyphicon glyphicon-ok-circle report-success': sms.type == 'status-report' && sms.delivery.indexOf( 'completed' ) != -1,  'glyphicon glyphicon-ban-circle report-error': sms.type == 'status-report' && sms.delivery.indexOf( 'completed' ) == -1 }"/>
+                        <span class="glyphicon glyphicon-envelope sms-new" ng-if="sms.new"/>
+                        <span class="sms-number">{{sms.number}}</span>
+                        <span style="float:left;margin-left:15%;margin-top:-4px;">
+                            <span class="sms-delivery label" ng-if="sms.type == 'status-report'" data-translate="sms.report-label"/>
+                            <span class="sms-delivery value" ng-if="sms.type == 'status-report'">{{sms.delivery}}</span>
+                        </span>
+                        <span class="sms-time">{{sms.timestamp | date: "dd MMM yyyy h:mm a"}}</span>
+                    </div>
+                    <div style="clear:both;">                        
+                        <span class="sms-text" ng-class="{'new': sms.new}">{{sms.text}}</span>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div> -->
+
+<div ng-show="showMessages" style="margin-bottom:5px;">
+    <div class="sms-row" ng-repeat="sms in i.device.messages.slice().reverse() track by sms.hash">
+        <div class="sms-checkbox-cell">
+            <input type="checkbox" ng-model="deleteSmsList[sms.hash]" ng-change="i.device.updateDelete( sms.hash, deleteSmsList[sms.hash] )"/>
+        </div>
+        <div style="overflow:hidden;">
+                <div>
+                    <span class="sms-type" ng-class="{ 'glyphicon glyphicon-arrow-right incoming': sms.type == 'deliver', 'glyphicon glyphicon-arrow-left outgoing': sms.type == 'submit', 'glyphicon glyphicon-ok-circle report-success': sms.type == 'status-report' && sms.delivery.indexOf( 'completed' ) != -1,  'glyphicon glyphicon-ban-circle report-error': sms.type == 'status-report' && sms.delivery.indexOf( 'completed' ) == -1 }"/>
+                    <span class="glyphicon glyphicon-envelope sms-new" ng-if="sms.new"/>
+                    <span class="sms-number">{{sms.number}}</span>
+                    <span style="float:left;margin-left:15%;margin-top:-4px;">
+                        <span class="sms-delivery label" ng-if="sms.type == 'status-report'" data-translate="sms.report-label"/>
+                        <span class="sms-delivery value" ng-if="sms.type == 'status-report'">{{sms.delivery}}</span>
+                    </span>
+                    <span class="sms-time">{{sms.timestamp | date: "dd MMM yyyy h:mm a"}}</span>
+                </div>
+                <div style="clear:both;">                        
+                    <span class="sms-text" ng-class="{'new': sms.new}">{{sms.text}}</span>
+                </div>
+        </div>
+    </div>
+</div>

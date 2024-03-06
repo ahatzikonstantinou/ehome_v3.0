@@ -1,0 +1,41 @@
+{
+    "home": {
+        "alarm": {
+            "UNARMED": "Unarmed",
+            "ARMING": "Arming",
+            "ARMED_HOME": "Armed Home",
+            "ARMED_AWAY": "Armed Away",
+            "TRIGGERED": "Triggered",
+            "ACTIVATED": "Activated",
+            "ARM_HOME": "Arm Home",
+            "ARM_AWAY": "Arm Away",
+            "DISARM": "Disarm",
+            "UNAVAILABLE": "Unavailable"
+        },
+        "motion": {
+            "detection": {
+                "NO_MOTION": "No motion",
+                "MOTION_DETECTED": "Motion"
+            },
+            "state": {
+                "CAMERA_LOST": "Camera lost",            
+                "ACTIVE": "Active",
+                "PAUSED": "Inactive",
+                "UNAVAILABLE": "Unavailable"
+            }
+        },
+        "state": {
+            "UNAVAILABLE": "Unavailable",
+            "OPEN": "Open",
+            "CLOSED": "Closed",
+            "RECLINED": "Reclined",
+            "ON": "On",
+            "OFF": "Off",
+            "offline": "Unavailable"
+        },
+        "filters": {
+            "all": "All",
+            "none": "None"
+        }
+    }
+}

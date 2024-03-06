@@ -1,0 +1,23 @@
+<div ng-show="showMqttTopics">
+    <span class="item">[{{i.type}}]</span>
+    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+</div>
+<div style="overflow: auto;">
+    <div class="device-label">
+        <span class="mdi mdi-blinds device-icon"/>
+        <span class="device-name">{{i.name}}</span>
+    </div>
+    
+    <div class="state-container">
+        <span class="state" ng-class="{ 'warning': i.device.state.main == 'OPEN', 'info': i.device.state.main == 'CLOSED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.main}}">{{i.device.state.main}}</span>        
+        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate | date: 'dd/MM/yyyy HH:mm') : ''}}</span>
+    </div>
+    <div style="display: table-cell;vertical-align: middle;">
+        <span class="state info slider-value">{{i.device.tempPercent}}</span>
+        <div class="rzslider-container">
+            <div class="rzslider-disable" ng-if="i.device.state.main == 'UNAVAILABLE'"/>
+            <rzslider rz-slider-model="i.device.tempPercent" rz-slider-options="{ floor: 0, ceil: 100, step: 1, onEnd: i.device.setPercent() }" ng-disabled="i.device.state.main == 'UNAVAILABLE'" ></rzslider>
+        </div>    
+    </div>
+</div>
