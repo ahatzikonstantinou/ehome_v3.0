@@ -16,6 +16,6 @@
         <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning': i.device.state.right == 'ON', 'btn-info': i.device.state.right == 'OFF', 'unavailable': i.device.state.right == 'UNAVAILABLE', 'switch-on': i.device.state.right == 'ON', 'switch-off': i.device.state.right == 'OFF' }" ng-click="i.device.state.right == 'ON' ? i.device.switchRight( 'OFF' ) : i.device.switchRight( 'ON' )" ng-disabled="i.device.state.right == 'UNAVAILABLE'" data-translate="{{'home.state.' + i.device.state.right}}" onfocus="this.blur();">
             {{i.device.state.right}}
         </button>
-        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate | date: 'dd/MM/yyyy HH:mm') : ''}}</span>
+        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
     </div>
 </div>

@@ -276,7 +276,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
             </div>
             <div class="form-group">
                 <label for="itemContainer">Container:</label>
-                <select id="itemContainer" name="itemContainer">
+                <select id="itemContainer" name="itemContainer" required>
                     <option value="">Select Container</option>
                     <!-- Options will be dynamically generated here -->
                 </select>
@@ -325,7 +325,10 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
                                 def getParent(containerGuid, delimit):
                                     if not containerGuid:
                                         return ""
-                                    container = list(c for c in containers if c['guid'] == containerGuid)[0]
+                                    containerList = list(c for c in containers if c['guid'] == containerGuid)
+                                    if len(containerList) == 0:
+                                        return "Container '" + containerGuid + "' not Found"
+                                    container = containerList[0]
                                     if container['parentContainer']:
                                         return getParent(container['parentContainer'], delimit) + delimit + container['containerName']
                                     else:
@@ -378,7 +381,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
                                 "<form class=\"treeItem\" action=\"/delete/item/"+ item.id +"\" method=\"post\">" +
                                     "<button class=\"treeItem\" type=\"submit\">Delete</button>" +
                                 "</form></div></li>" ;
-                            })
+                            }).join("")
                             + "</ul>";
                             
                         }

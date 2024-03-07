@@ -13,6 +13,27 @@ $def with (mqtt_servers, containers, domains, item_types, items)
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/old.css">
     <script src="/static/scripts/paho-mqtt.min.js"></script>
+
+    <script src="/static/scripts/devices/mqtt_device.js"></script>
+    <script src="/static/scripts/devices/alarm.js"></script>
+    <script src="/static/scripts/devices/door1.js"></script>
+    <script src="/static/scripts/devices/door2r.js"></script>
+    <script src="/static/scripts/devices/ipcamera.js"></script>
+    <script src="/static/scripts/devices/ipcameraPanTilt.js"></script>
+    <script src="/static/scripts/devices/light1.js"></script>
+    <script src="/static/scripts/devices/light2.js"></script>
+    <!-- <script src="/static/scripts/devices/modem.js"></script> -->
+    <script src="/static/scripts/devices/motionCamera.js"></script>
+    <script src="/static/scripts/devices/motionCameraPanTilt.js"></script>
+    <script src="/static/scripts/devices/net.js"></script>
+    <script src="/static/scripts/devices/roller1.js"></script>
+    <script src="/static/scripts/devices/roller1_auto.js"></script>
+    <script src="/static/scripts/devices/server-connection.js"></script>
+    <script src="/static/scripts/devices/temperature_humidity.js"></script>
+    <script src="/static/scripts/devices/window1.js"></script>
+    <script src="/static/scripts/devices/window1r.js"></script>
+    <script src="/static/scripts/devices/window2r.js"></script>
+
     <script>
         // mqttServer data
         var mqttServers = [
@@ -39,18 +60,39 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 
         var items = [
             $for item in items:
-                { id: $(loop.index-1), itemName: "$item['itemName']", itemMqttServer: $item['itemMqttServer'], itemContainer: "$item['itemContainer']", type: "$item['itemType']", state: "UNKNOWN",
-                device : { 
-                    id: crypto.randomUUID(),
-                    name: "$item['itemName']",
-                    mqtt_publish_topic: "$item['publish']", 
-                    mqtt_subscribe_topic: "$item['subscribe']",
-                    state: { main: "UNAVAILABLE"  },
-                    lastUpdate : null
+                { 
+                    id: $(loop.index0), 
+                    name: "$item['itemName']", 
+                    itemMqttServer: $item['itemMqttServer'], 
+                    itemContainer: "$item['itemContainer']", 
+                    type: "$item['itemType']", 
+                    publish: "$item['publish']",
+                    subscribe: "$item['subscribe']",
+                    state: "UNKNOWN",
+                    // for cameras
+                    url: null,
+                    baseUrl: null,
+                    videostream: null,
+                    right: null,
+                    left: null,
+                    up: null,
+                    down: null,
+                    stop: null,                    
+                    cameraId: null
                 },
-            }
         ];
-            
+        
+        var filter = {
+                        DOOR: true,
+                        WINDOW: true,
+                        LIGHT: true,
+                        CLIMATE: true,
+                        COVER: true,
+                        ALARM: true,
+                        CAMERA: true,
+                        MOTION: true                        
+                    };
+
         const client = {};
 
         function connectToMqtt(server) {
@@ -84,6 +126,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 containersList = configuration.containers;
                 item_types = configuration.item_types;
                 items = configuration.items;
+                initContent();
             }
             else
             {
@@ -128,9 +171,18 @@ $def with (mqtt_servers, containers, domains, item_types, items)
         var hiddenContainers = [];
         var proxyContainerRecompileNgClass = false;
         window.onload = function () {
-            mqttServers.forEach(connectToMqtt);
             console.log("window.onload");
+            initContent();
+        };
+
+        function initContent()
+        {
+            proxyContainerRecompileNgClass = false;
+            mqttServers.forEach(connectToMqtt);
             
+            items.forEach(i => { addDeviceToItem(i);});
+            console.log("items: ", items);
+
             hiddenContainers = generateContainerItemTree(containersList, null);
             containers = []; // these will be the proxies
             hiddenContainers.forEach(hc => { containers.push(createProxiedContainer(hc)); });
@@ -142,17 +194,16 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             // document.getElementById('content').innerHTML=
             // getContentsFromFile('static/elements/container.html').response;
             while(documentContainsNgRepeat() || documentContainsReplaceableCustomElements())
-            // for(let i = 0 ; i < 2 ; i++)
+            // for(let i = 0 ; i < 3 ; i++)
             {
                 console.log((documentContainsNgRepeat() || documentContainsReplaceableCustomElements()));
                 compileNgIf();
                 compileNgRepeat();
                 compileCustomElements();
-            // evalValues(null, document.getElementById('content'));
-
             }
             compileNgInit();
             compileNgShow();
+            compileUibCollapse();
             compileNgClass();
             evalValues(null, document.getElementById('content'));
             compileNgClick();
@@ -169,8 +220,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             });
 
             proxyContainerRecompileNgClass = true;
-            console.log("full text: ", document.getElementById("content").innerHTML);
-        };
+            console.log("full text: ", document.getElementById("content").innerHTML);            
+        }
 
         function createProxy(obj) {
             return new Proxy(obj, {
@@ -187,6 +238,9 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                         if(proxyContainerRecompileNgClass)
                         {
                             // proxyContainerRecompileNgClass = false;
+                            compileNgIf();
+                            compileUibCollapse();
+                            compileNgShow();
                             compileNgClass();
                             // proxyContainerRecompileNgClass = true;
                         }
@@ -220,7 +274,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
 
             let htmlFilesExist = true;
             ces.forEach((c) => {
-                let text = getContentsFromFile('static/elements/' + c + '.html');
+                let text = getContentsFromFile('static/elements/' + c.localName + '.html');
                 htmlFilesExist = htmlFilesExist && text.found;
             })
             return htmlFilesExist;
@@ -232,13 +286,15 @@ $def with (mqtt_servers, containers, domains, item_types, items)
         }
 
         function collectAttributes(node, attributes, textNodes) {
-            // Collect attributes from the current element
+            // Collect attributes from the current element in order to update their values
+            // by replacing variables appearing as isolated scope in custom elements
             // console.log("node: ", node, " has " + node.attributes.length + " attribues: ", node.attributes);
             if (node.nodeType === Node.ELEMENT_NODE && node.attributes.length > 0){
                 for (let i = 0; i < node.attributes.length; i++) {
                     const attribute = node.attributes[i];
                     if (attribute.name.startsWith('ng-') ||
                         attribute.name === "data-translate" ||
+                        attribute.name === "uib-collapse" ||
                         customElementDirectives.map(c => c.attributesToContext.map(a => a.attribute))
                             .flat()
                             .some(a => a.toLowerCase() === attribute.name.toLowerCase() )
@@ -337,18 +393,20 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     // copy computed values of attributes already stored in context with key = attribute.name
                     // into new (or existing) context keys for use in children of element
                     let oldValue = element.getAttribute(a2c.attribute);
+                    let replacementValue = oldValue;
                     if(oldValue != null)
                     {
                         // console.log(a2c.attribute + " old value: " + oldValue);
-                        const newValue = evaluateAndCheckPrimitive(oldValue);
-                        if(!newValue.error && newValue.isPrimitive)
+                        const evaluatedValue = evaluateAndCheckPrimitive(oldValue);
+                        if(!evaluatedValue.error && evaluatedValue.isPrimitive)
                         {
                             // console.log("newValue: " + newValue.result );
-                            element.setAttribute(a2c.attribute, newValue.result);
+                            // element.setAttribute(a2c.attribute, newValue.result);
+                            replacementValue = "(" + element.getAttribute(a2c.attribute) + ")"
                         }
                     }
 
-                    replaceWordAWithWordB(template.content, a2c.contextProperty, element.getAttribute(a2c.attribute));
+                    replaceWordAWithWordB(template.content, a2c.contextProperty, replacementValue);
                     // console.log("template now is: " + template.innerHTML);
                 });
                
@@ -403,8 +461,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 if (!!clickHandler) {
                     // console.log("adding click eventListenr '" + clickHandler + "' to element: ", element);
                     element.addEventListener('click', function() {
-                        // console.log("eval clickHandler: ", clickHandler);
-                        eval(clickHandler);
+                        console.log("eval clickHandler: ", clickHandler);
+                        console.log(eval(clickHandler));
                     });
                 }
             });
@@ -467,15 +525,29 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             });
         }
 
+        function compileUibCollapse() {
+            const elements = document.querySelectorAll('[uib-collapse]');
+            elements.forEach(collapsibleElement => {
+                const condition = collapsibleElement.getAttribute('uib-collapse');
+                if (condition) {
+                    const isVisible = evaluateCondition(condition);
+                    if (!isVisible) {
+                        // collapsibleElement.style.maxHeight = 0;
+                        collapsibleElement.style.display = 'none';
+                    } else {
+                        // collapsibleElement.style.maxHeight = '1000px';
+                        collapsibleElement.style.display = ''; 
+                    }
+                }
+            });
+        }
+    
         function compileNgShow() {
             const elements = document.querySelectorAll('[ng-show]');
             elements.forEach(element => {
                 const condition = element.getAttribute('ng-show');
                 if (condition) {
                     const isVisible = evaluateCondition(condition);
-                    // if (!isVisible) {
-                    //     element.parentNode.removeChild(element);
-                    // }
                     if (!isVisible) {
                         element.style.display = 'none';
                     } else {
@@ -489,17 +561,17 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             const elements = document.querySelectorAll('[ng-if]');
             elements.forEach(element => {
                 const condition = element.getAttribute('ng-if');
-                element.removeAttribute('ng-if');
+                // element.removeAttribute('ng-if');
                 if (condition) {
                     const isVisible = evaluateCondition(condition);
-                    // if (!isVisible) {
-                    //     element.parentNode.removeChild(element);
-                    // }
                     if (!isVisible) {
-                        element.style.display = 'none';
-                    } else {
-                        element.style.display = ''; // Restore default display
+                        element.parentNode.removeChild(element);
                     }
+                    // if (!isVisible) {
+                    //     element.style.display = 'none';
+                    // } else {
+                    //     element.style.display = ''; // Restore default display
+                    // }
                 }
             });
         }
@@ -1012,8 +1084,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                             return item.itemContainer == containerListElement.guid;
                         }),
                 gui : {
-                    collapsed: false,
-                    allChildrenExpanded: true,
+                    collapsed: true,
+                    allChildrenExpanded: false,
                     showMqttTopics: false,
                     filter: {
                         DOOR: true,
@@ -1025,8 +1097,70 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                         CAMERA: true,
                         MOTION: true                        
                     }
-                }
+                },
+                expandAllChildren: function( expand ) { this.gui.collapsed = expand; for( let c = 0 ; c < this.containers.length ; c++ ) { this.containers[c].expandAllChildren( expand ); } }
             };
+        }
+
+        function addDeviceToItem( item )
+        {
+            switch( item.type )
+            {
+                case 'ALARM':
+                    item.device = new Alarm( item.publish, item.subscribe, { main: 'ARMED_HOME' } );
+                    break;
+                case 'NET':
+                    item.device = new Net( item.publish, { main: 'UNAVAILABLE' } );
+                    break;
+                case 'DOOR1':
+                    item.device = new Door1( item.publish, { main: 'UNAVAILABLE' } );
+                    break;
+                case 'DOOR2R':                
+                    item.device = new Door2R( item.publish, { left: 'OPEN', right: 'CLOSED', recline: 'OPEN' } );
+                    break;
+                case 'IPCAMERA':
+                    item.device = new IPCamera( item.url );
+                    break;
+                case 'IPCAMERAPANTILT':
+                    item.device = new IPCameraPanTilt( item.baseUrl, item.videostream, item.right, item.left, item.up, item.down, item.stop );
+                    break;
+                case 'LIGHT1':
+                    item.device = new Light1( item.publish, item.subscribe, { state: 'offline' } );
+                    break;
+                case 'LIGHT2':
+                    item.device = new Light2( item.publish, item.subscribe, { left: 'ON', right: 'OFF' } );
+                    break;
+                case 'MOTIONCAMERA':
+                    item.device = new MotionCamera( item.publish, item.subscribe, item.cameraId, item.videostream, 'UNAVAILABLE', 'NO_MOTION' );
+                    break;
+                case 'MOTIONCAMERAPANTILT':
+                    item.device = new MotionCameraPanTilt( item.publish, item.subscribe, item.cameraId, item.videostream, 'UNAVAILABLE', 'NO_MOTION' );
+                    break;
+                case 'ROLLER1':
+                    item.device = new Roller1( item.publish, { main: 'UNAVAILABLE' } );
+                    break;
+                case 'ROLLER1_AUTO':
+                    item.device = new Roller1_Auto( item.publish, item.subscribe, { main: 'UNAVAILABLE', percent: -1 } );
+                    break;
+                case 'TEMPERATURE_HUMIDITY':
+                    item.device = new TemperatureHumidity( item.publish, { main: 'ΟΝ', temperature: 20, humidity: 18 } );
+                    break;
+                case 'WINDOW1':
+                    item.device = new Window1( item.publish, { main: 'UNAVAILABLE' });
+                    break;
+                case 'WINDOW1R':
+                    item.device = new Window1R( item.publish, { main: 'UNAVAILABLE', recline: 'UNAVAILABLE' } );
+                    break;
+                case 'WINDOW2R':
+                    item.device = new Window2R( item.publish, { left: 'UNAVAILABLE', right: 'UNAVAILABLE', recline: 'UNAVAILABLE' } );
+                    break;
+                case 'MODEM':
+                    item.device = new Modem( item.publish, item.subscribe, {} );
+                    break;
+                case 'SMS':
+                    item.device = new Sms( item.publish, item.subscribe, {} );
+                    break;
+            }
         }
 
     </script>

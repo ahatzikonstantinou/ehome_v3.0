@@ -3,12 +3,12 @@
         <label ng-class="{ 'house': level==1, 'floor': level==2, 'room': level>2 }" >{{c.name}}</label>
         <span class="summary" ng-if="c.containers.length == 1">({{c.containers[0].name}})</span>
         <button ng-if="c.containers.length > 0 || c.items.length > 0" type="button" class="btn btn-xs" ng-class="{ 'btn-default': level == 1, 'btn-link': level > 1 }" ng-click="c.gui.collapsed = !c.gui.collapsed">
-            <span ng-class="{ 'mdi mdi-chevron-down': level == 1, 'glyphicon glyphicon-triangle-bottom': level > 1}" ng-if="c.gui.collapsed"></span>
-            <span ng-class="{ 'mdi mdi-chevron-up': level == 1, 'glyphicon glyphicon-triangle-top': level > 1}" ng-if="!c.gui.collapsed"></span>
+            <span ng-class="{ 'mdi mdi-chevron-down': level == 1, 'glyphicon glyphicon-triangle-bottom': level > 1}" ng-show="!c.gui.collapsed"></span>
+            <span ng-class="{ 'mdi mdi-chevron-up': level == 1, 'glyphicon glyphicon-triangle-top': level > 1}" ng-show="c.gui.collapsed"></span>
         </button>
         <button ng-if="level == 1 && ( c.containers.length > 0 || c.items.length > 0 )" type="button" class="btn btn-default btn-xs" ng-click="c.gui.allChildrenExpanded = !c.gui.allChildrenExpanded; c.expandAllChildren( !c.gui.allChildrenExpanded )">
-            <span class="mdi mdi-chevron-double-down" ng-if="!c.gui.allChildrenExpanded"></span>
-            <span class="mdi mdi-chevron-double-up" ng-if="c.gui.allChildrenExpanded"></span>
+            <span class="mdi mdi-chevron-double-down" ng-show="!c.gui.allChildrenExpanded"></span>
+            <span class="mdi mdi-chevron-double-up" ng-show="c.gui.allChildrenExpanded"></span>
         </button>
     </div>    
     <div ng-if="level==1">
@@ -54,12 +54,12 @@
 
         </div>
     </div>
-    <div uib-collapse="level != 0 && showLabel && c.gui.collapsed">        
+    <div uib-collapse="level != 0 && c.gui.collapsed">        
         <div ng-repeat="i in c.items">
-                <item item='i' filter="filter" is-collapsed-house="c.gui.collapsed" is-collapsed-floor="false" is-collapsed-room="false" show-mqtt-topics='"showMqttTopics"'/>
+                <item item='i' filter="filter" is-collapsed-house="c.gui.collapsed" is-collapsed-floor="false" is-collapsed-room="false" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>
         </div>
         <div ng-repeat="o in c.containers">
-            <container container='o' level="level + 1" show-label='"c.containers.length > 1"' expandAllChildren="c.gui.allChildrenExpanded" is-collapsed-house="c.gui.collapsed" filter='level == 1 ? "c.gui.filter" : "filter"' show-mqtt-topics='level == 1 ? "c.gui.showMqttTopics" : "showMqttTopics"'/>            
+            <container container='o' level="level + 1" show-label="c.containers.length > 1" expandAllChildren="c.gui.allChildrenExpanded" is-collapsed-house="c.gui.collapsed" filter="level == 1 ? c.gui.filter : filter" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>            
         </div>
     </div>
 </div>
