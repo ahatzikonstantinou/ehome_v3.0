@@ -38,7 +38,7 @@ var Roller1_Auto = (function () {
         this.state.percent = this.tempPercent;
         if( this.publisher )
         {
-            var message = new Paho.MQTT.Message( this.state.percent + '' );
+            var message = new Paho.Message( this.state.percent + '' );
             message.destinationName = this.mqtt_publish_topic ;
             // console.log( 'Roller1_Auto sending message: ', message );
             this.publisher.send( message );

@@ -89,3 +89,51 @@ button[disabled]{
     margin: 2px;
     padding: 8px;
 }
+
+/*fix the positioning of icons inside device labels*/
+.device-icon:before{
+    position:relative;
+    top:4px;
+}
+
+.device-label .device-icon {
+    padding: 6px;
+    margin-left: 4px;
+    padding-left: 4px;
+}
+
+.device-label button {
+    margin-bottom: 2px;
+    margin-top: 0px;
+}
+
+.device-panel{
+    margin-top:4px;
+    margin-bottom: 4px;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding: 6px;
+    border: 0px solid #bbb;
+    border-radius:8px;
+    background-color: white;
+}
+
+.container .items{
+    background-color: #eef;
+    padding: 2px;
+}
+
+.device-panel .state.humidity.mdi.mdi-water:before,
+.device-panel .state.temperature.mdi.mdi-thermometer-lines:before{
+    position:relative;
+    top:4px;
+}
+
+.containers {
+    overflow: auto;
+    width: 100%;
+}
+
+.servers {
+    background-color: #fff;    
+}

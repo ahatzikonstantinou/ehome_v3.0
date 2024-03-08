@@ -1,21 +1,56 @@
-<div ng-show="showMqttTopics">
-    <span class="item">[{{i.type}}]</span>
-    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
-    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
-</div>
-<div style="overflow: auto;">
-    <div class="device-label">
-        <span class="mdi mdi-lightbulb device-icon"/>
-        <span class="device-name">{{i.name}}</span>
-    </div>    
-    <div class="state-container">
-        <!--<button type="button" class="btn btn-xs" ng-class="{ 'btn-warning': i.device.state.main == 'ON', 'btn-info': i.device.state.main == 'OFF' }" ng-click="i.device.state.main == 'ON' ? i.device.state.main = 'OFF' : i.device.state.main = 'ON'">-->
-        <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning device-on': i.device.state.left == 'ON', 'btn-info device-off': i.device.state.left == 'OFF', 'unavailable': i.device.state.left == 'UNAVAILABLE', 'switch-on': i.device.state.left == 'ON', 'switch-off': i.device.state.left == 'OFF' }" ng-click="i.device.state.left == 'ON' ? i.device.switchLeft( 'OFF' ) : i.device.switchLeft( 'ON' )" ng-disabled="i.device.state.left == 'UNAVAILABLE'" data-translate="{{'home.state.' + i.device.state.left}}" onfocus="this.blur();">
-            {{i.device.state.left}}
-        </button>
-        <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning': i.device.state.right == 'ON', 'btn-info': i.device.state.right == 'OFF', 'unavailable': i.device.state.right == 'UNAVAILABLE', 'switch-on': i.device.state.right == 'ON', 'switch-off': i.device.state.right == 'OFF' }" ng-click="i.device.state.right == 'ON' ? i.device.switchRight( 'OFF' ) : i.device.switchRight( 'ON' )" ng-disabled="i.device.state.right == 'UNAVAILABLE'" data-translate="{{'home.state.' + i.device.state.right}}" onfocus="this.blur();">
-            {{i.device.state.right}}
-        </button>
-        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+<div class="device-panel" ng-show="filter.LIGHT">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+        <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+    </div>
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-lightbulb device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.showDeviceCommands = !i.device.showDeviceCommands">
+                <span class="mdi mdi-dots-horizontal"></span>
+            </button> 
+        </div>    
+        <div class="state-container">
+            <!--<button type="button" class="btn btn-xs" ng-class="{ 'btn-warning': i.device.state.main == 'ON', 'btn-info': i.device.state.main == 'OFF' }" ng-click="i.device.state.main == 'ON' ? i.device.state.main = 'OFF' : i.device.state.main = 'ON'">-->
+            <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning device-on': i.device.state.left == 'ON', 'btn-info device-off': i.device.state.left == 'OFF', 'unavailable': i.device.state.left == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF'), 'switch-on': i.device.state.left == 'ON', 'switch-off': i.device.state.left == 'OFF' }" ng-click="i.device.state.left == 'ON' ? i.device.switchLeft( 'OFF' ) : i.device.switchLeft( 'ON' )" ng-disabled="i.device.state.left == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF')" data-translate="{{'home.state.' + i.device.state.left}}" onfocus="this.blur();">
+                <span ng-show="i.device.state.left == 'ON'">ON</span>
+                <span ng-show="i.device.state.left == 'OFF'">OFF</span>
+                <span ng-show="i.device.state.left == 'UNAVAILABLE'">UNAVAILABLE</span>
+            </button>
+            <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning': i.device.state.right == 'ON', 'btn-info': i.device.state.right == 'OFF', 'unavailable': i.device.state.right == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF'), 'switch-on': i.device.state.right == 'ON', 'switch-off': i.device.state.right == 'OFF' }" ng-click="i.device.state.right == 'ON' ? i.device.switchRight( 'OFF' ) : i.device.switchRight( 'ON' )" ng-disabled="i.device.state.right == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF')" data-translate="{{'home.state.' + i.device.state.right}}" onfocus="this.blur();">
+                <span ng-show="i.device.state.right == 'ON'">ON</span>
+                <span ng-show="i.device.state.right == 'OFF'">OFF</span>
+                <span ng-show="i.device.state.right == 'UNAVAILABLE'">UNAVAILABLE</span>
+            </button>
+            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+        </div>
+    </div>
+    <div ng-show="i.device.showDeviceCommands">    
+        <div>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('calibrate')">
+                <span class="mdi mdi-metronome">Calibrate</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('check')">
+                <span class="mdi mdi-playlist-check">Check</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('report')">
+                <span class="mdi mdi-message-text">Report</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('access-point')">
+                <span class="mdi mdi-radio-tower">Access Point</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('activate')">
+                <span class="mdi mdi-power-on">Activate</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('deactivate')">
+                <span class="mdi mdi-power-off">Deactivate</span>
+            </button>
+        </div>
+        <div>
+            <div>State:</div>
+            <div><span class="device-mqtt-state">{{i.device.mqtt_message}}</span></div>
+        </div>
     </div>
 </div>

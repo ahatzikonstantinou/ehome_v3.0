@@ -74,7 +74,7 @@ var Door1 = (function () {
         MqttDevice.prototype.setPublisher.call( this, publisher );
 
         //send a message to retrieve modem list as soon as we are assigned a publisher
-        var message = new Paho.MQTT.Message( this.listCmd );
+        var message = new Paho.Message( this.listCmd );
         message.destinationName = this.mqtt_subscribe_topic ;
         console.log( 'Modem sending message: ', message.payloadString );
         this.publisher.send( message );
@@ -96,7 +96,7 @@ var Door1 = (function () {
         console.log( 'Modem (', this, ') will send payload ', payload, ' to topic ', this.mqtt_subscribe_topic );
         if( this.publisher )
         {                
-            var message = new Paho.MQTT.Message( payload );
+            var message = new Paho.Message( payload );
             message.destinationName = this.mqtt_subscribe_topic ;
             console.log( 'Modem sending message: ', message.payloadString );
             this.publisher.send( message );
@@ -111,7 +111,7 @@ var Door1 = (function () {
         console.log( 'Modem (', this, ') will send payload ', payload, ' to topic ', this.mqtt_subscribe_topic );
         if( this.publisher )
         {                
-            var message = new Paho.MQTT.Message( payload );
+            var message = new Paho.Message( payload );
             message.destinationName = this.mqtt_subscribe_topic ;
             console.log( 'Modem sending message: ', message.payloadString );
             this.publisher.send( message );

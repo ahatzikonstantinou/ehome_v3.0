@@ -1,22 +1,24 @@
-<div ng-show="showMqttTopics">
-    <span class="item">[{{i.type}}]</span>
-    <span class="text-primary">{{i.device.mqtt_publish_topic}}</span>
-</div>
-<div style="overflow: auto;">
-    <div class="device-label">
-        <span class="mdi mdi-window-open device-icon"/>
-        <span class="device-name">{{i.name}}</span>
-    </div>    
-    <div class="state-container">
-        <div class="state-row">
-            <span style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.recline == 'OPEN', 'info': i.device.state.recline == 'CLOSED', 'unavailable': i.device.state.recline == 'UNAVAILABLE' }" data-translate="{{'home.state.' + (i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline)}}">
-                {{i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline }}
-            </span>
+<div class="device-panel ng-show="filter.WINDOW"">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_publish_topic}}</span>
+    </div>
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-window-open device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+        </div>    
+        <div class="state-container">
+            <div class="state-row">
+                <span style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.recline == 'OPEN', 'info': i.device.state.recline == 'CLOSED', 'unavailable': i.device.state.recline == 'UNAVAILABLE' }" data-translate="{{'home.state.' + (i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline)}}">
+                    {{i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline }}
+                </span>
+            </div>
+            <div class="state-row">
+                <span class="state" ng-class="{ 'warning': i.device.state.left == 'OPEN', 'info': i.device.state.left == 'CLOSED', 'unavailable': i.device.state.left == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.left}}">{{i.device.state.left}}</span>
+                <span class="state" ng-class="{ 'warning': i.device.state.right == 'OPEN', 'info': i.device.state.right == 'CLOSED', 'unavailable': i.device.state.right == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.right}}">{{i.device.state.right}}</span>
+            </div>
+            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
         </div>
-        <div class="state-row">
-            <span class="state" ng-class="{ 'warning': i.device.state.left == 'OPEN', 'info': i.device.state.left == 'CLOSED', 'unavailable': i.device.state.left == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.left}}">{{i.device.state.left}}</span>
-            <span class="state" ng-class="{ 'warning': i.device.state.right == 'OPEN', 'info': i.device.state.right == 'CLOSED', 'unavailable': i.device.state.right == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.right}}">{{i.device.state.right}}</span>
-        </div>
-        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
     </div>
 </div>

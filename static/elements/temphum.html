@@ -1,19 +1,21 @@
-<div ng-show="showMqttTopics">
-    <span class="item">[{{i.type}}]</span>
-    <span class="text-primary">{{i.device.mqtt_publish_topic}}</span>
-</div>
-<div style="overflow: auto;">
-    <div class="device-label">
-        <span class="mdi mdi-thermometer device-icon"/>
-        <span class="device-name">{{i.name}}</span>
-    </div>    
-    <div class="state-container">
-        <span class="state temperature mdi mdi-thermometer-lines" ng-class="{'unavailable': i.device.state.main == 'UNAVAILABLE' }">
-            {{i.device.state.main == 'UNAVAILABLE' ? '--' : i.device.state.temperature}}°C
-        </span>
-        <span class="state humidity mdi mdi-water"  ng-class="{'unavailable': i.device.state.main == 'UNAVAILABLE' }">
-            {{i.device.state.main == 'UNAVAILABLE' ? '--' : i.device.state.humidity}}%
-        </span>
-        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+<div class="device-panel" ng-show="filter.CLIMATE">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_publish_topic}}</span>
+    </div>
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-thermometer device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+        </div>    
+        <div class="state-container">
+            <span class="state temperature mdi mdi-thermometer-lines" ng-class="{'unavailable': i.device.state.main == 'UNAVAILABLE' }">
+                {{i.device.state.main == 'UNAVAILABLE' ? '--' : i.device.state.temperature}}°C
+            </span>
+            <span class="state humidity mdi mdi-water"  ng-class="{'unavailable': i.device.state.main == 'UNAVAILABLE' }">
+                {{i.device.state.main == 'UNAVAILABLE' ? '--' : i.device.state.humidity}}%
+            </span>
+            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+        </div>
     </div>
 </div>

@@ -1,23 +1,25 @@
-<div ng-show="showMqttTopics">
-    <span class="item">[{{i.type}}]</span>
-    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
-    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
-</div>
-<div style="overflow: auto;">
-    <div class="device-label">
-        <span class="mdi mdi-security-home device-icon"/>
-        <span class="device-name">{{i.name}}</span>
+<div class="device-panel" ng-show="filter.ALARM">
+    <div class="mqtt" <div ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+        <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
     </div>
-    <div class="state-container">
-        <span class="state" ng-if="i.device.state.main == 'ARMING' || i.device.state.main == 'TRIGGERED'"
-            ng-class="{ 'unarmed': i.device.state.main == 'UNARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED'  }">
-                {{i.device.state.countdown}}
-        </span>
-        <span class="state"
-            ng-class="{ 'unarmed': i.device.state.main == 'UNARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }"
-            data-translate="{{'home.alarm.' + i.device.state.main}}">
-                {{i.device.state.main}} 
-        </span>
-        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-shield-home device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+        </div>
+        <div class="state-container">
+            <span class="state" ng-if="i.device.state.main == 'ARMING' || i.device.state.main == 'TRIGGERED'"
+                ng-class="{ 'unarmed': i.device.state.main == 'UNARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED'  }">
+                    {{i.device.state.countdown}}
+            </span>
+            <span class="state"
+                ng-class="{ 'unarmed': i.device.state.main == 'UNARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }"
+                data-translate="{{'home.alarm.' + i.device.state.main}}">
+                    {{i.device.state.main}} 
+            </span>
+            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+        </div>
     </div>
 </div>

@@ -1,28 +1,30 @@
-<div ng-show="showMqttTopics">
-    <span class="item">[{{i.type}}]</span>
-    <span class="text-primary">{{i.device.baseUrl}}</span>
-</div>
-<div style="overflow: auto;">
-    <div class="device-label">
-        <span class="mdi mdi-camcorder device-icon"/>
-        <span class="device-name">{{i.name}}</span>
+<div class="device-panel" ng-show="filter.CAMERA">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.baseUrl}}</span>
     </div>
-    <button type="button" class="btn btn-md btn-default"  ng-init="show=false" ng-click="show=!show">
-        <span class="glyphicon glyphicon-eye-open" ng-if="show"/>
-        <span class="glyphicon glyphicon-eye-close" ng-if="!show"/>
-    </button>
-    <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.down } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-down"/></button>
-    <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.up } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-up"/></button>
-    <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.right } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-right"/></button>
-    <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.left } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-left"/></button>
-    <div class="state-container">
-        <!--
-        ahat Note: using src will cause at first page load error
-         GET http://localhost:9000/%7B%7B%20!show%20%7C%7C%20isCollapsedHouse%20%7C%7C%2…apsedFloor%20%7C%7C%20isCollapsedRoom%20?%20%27%27%20:%20i.device.url%20}} 404 (Not Found)
-        which is harmless (it does not affect the page).
-        Trying to solve this using ng-src is a bad solution because, although the error goes away, the img tag keeps downloading 
-        from the specified url regardless of isCollapsedHouse || isCollapsedFloor || isCollapsedRoom
-        -->
-        <img src="{{ !show || isCollapsedHouse || isCollapsedFloor || isCollapsedRoom ? '' : i.device.baseUrl + i.device.videostream }}" ng-show="show"/>
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-camcorder device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+        </div>
+        <button type="button" class="btn btn-md btn-default"  ng-init="show=false" ng-click="show=!show">
+            <span class="glyphicon glyphicon-eye-open" ng-if="show"/>
+            <span class="glyphicon glyphicon-eye-close" ng-if="!show"/>
+        </button>
+        <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.down } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-down"/></button>
+        <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.up } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-up"/></button>
+        <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.right } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-right"/></button>
+        <button style="float:right;" type="button" class="btn btn-md btn-default" ng-mousedown="$http( { method: 'JSONP', url: i.device.baseUrl + i.device.left } )" ng-mouseup="$http(  { method: 'JSONP', url: i.device.baseUrl + i.device.stop } )"><span class="glyphicon glyphicon-arrow-left"/></button>
+        <div class="state-container">
+            <!--
+            ahat Note: using src will cause at first page load error
+            GET http://localhost:9000/%7B%7B%20!show%20%7C%7C%20isCollapsedHouse%20%7C%7C%2…apsedFloor%20%7C%7C%20isCollapsedRoom%20?%20%27%27%20:%20i.device.url%20}} 404 (Not Found)
+            which is harmless (it does not affect the page).
+            Trying to solve this using ng-src is a bad solution because, although the error goes away, the img tag keeps downloading 
+            from the specified url regardless of isCollapsedHouse || isCollapsedFloor || isCollapsedRoom
+            -->
+            <img src="{{ !show || isCollapsedHouse || isCollapsedFloor || isCollapsedRoom ? '' : i.device.baseUrl + i.device.videostream }}" ng-show="show"/>
+        </div>
     </div>
 </div>

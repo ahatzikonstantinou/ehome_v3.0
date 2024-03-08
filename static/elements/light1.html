@@ -1,51 +1,55 @@
-<div ng-show="showMqttTopics">
-    <span class="item">[{{i.type}}]</span>
-    <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
-    <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
-</div>
+<div class="device-panel" ng-show="filter.LIGHT">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+        <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+    </div>
 
-<div style="overflow: auto;" ng-init="deviceCommands[ i.device.id ]=false">
-    <div class="device-label">
-        <span class="mdi mdi-lightbulb device-icon"/>
-        <span class="device-name">{{i.name}}</span>
-        <button type="button" class="btn btn-xs btn-default" ng-click="deviceCommands[ i.device.id ] = !deviceCommands[ i.device.id ]">
-            <span class="mdi mdi-dots-horizontal"></span>
-        </button>    
-    </div>
-    <div class="state-container">
-        <span class="mdi mdi-alert-circle" style="color:red" ng-if="i.device.state.onError || i.device.state.offError"></span>
-        <span class="mdi" ng-class="{ 'mdi-gesture-tap': i.device.state.trigger == 'manual', 'mdi-wifi': i.device.state.trigger == 'wifi', 'mdi-metronome': i.device.state.trigger == 'calibration', 'mdi-playlist-check': i.device.state.trigger == 'check' }"></span>
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-lightbulb device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.showDeviceCommands = !i.device.showDeviceCommands">
+                <span class="mdi mdi-dots-horizontal"></span>
+            </button>    
+        </div>
+        <div class="state-container">
+            <span class="mdi mdi-alert-circle" style="color:red" ng-if="i.device.state.onError || i.device.state.offError"></span>
+            <span class="mdi" ng-class="{ 'mdi-gesture-tap': i.device.state.trigger == 'manual', 'mdi-wifi': i.device.state.trigger == 'wifi', 'mdi-metronome': i.device.state.trigger == 'calibration', 'mdi-playlist-check': i.device.state.trigger == 'check' }"></span>
 
-        <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning': i.device.state.state == 'ON', 'btn-info': i.device.state.state == 'OFF', 'unavailable': i.device.state.state == 'offline', 'switch-on': i.device.state.state == 'ON', 'switch-off': i.device.state.state == 'OFF'  }" ng-click="i.device.state.state == 'ON' ? i.device.switch( 'OFF' ) : i.device.switch( 'ON' )" ng-disabled="i.device.state.state == 'offline'" data-translate="{{'home.state.' + i.device.state.state}}" onfocus="this.blur();">
-            {{i.device.state.state}}
-        </button>
-        <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning': i.device.state.state == 'ON', 'btn-info': i.device.state.state == 'OFF', 'unavailable': i.device.state.state == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF'), 'switch-on': i.device.state.state == 'ON', 'switch-off': i.device.state.state == 'OFF'  }" ng-click="i.device.state.state == 'ON' ? i.device.switch( 'OFF' ) : i.device.switch( 'ON' )" ng-disabled="i.device.state.state == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF')" data-translate="{{'home.state.' + i.device.state.state}}" onfocus="this.blur();">
+                <span ng-show="i.device.state.state == 'ON'">ON</span>
+                <span ng-show="i.device.state.state == 'OFF'">OFF</span>
+                <span ng-show="i.device.state.state == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF')">UNAVAILABLE</span>
+            </button>
+            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+        </div>
     </div>
+    <div ng-show="i.device.showDeviceCommands">    
+        <div>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('calibrate')">
+                <span class="mdi mdi-metronome">Calibrate</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('check')">
+                <span class="mdi mdi-playlist-check">Check</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('report')">
+                <span class="mdi mdi-message-text">Report</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('access-point')">
+                <span class="mdi mdi-radio-tower">Access Point</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('activate')">
+                <span class="mdi mdi-power-on">Activate</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('deactivate')">
+                <span class="mdi mdi-power-off">Deactivate</span>
+            </button>
+        </div>
+        <div>
+            <div>State:</div>
+            <div><span class="device-mqtt-state">{{i.device.mqtt_message}}</span></div>
+        </div>
+    </div>
+    <!-- <div class="separator"></div> -->
 </div>
-<div ng-show="deviceCommands[ i.device.id ]">    
-    <div>
-        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('calibrate')">
-            <span class="mdi mdi-metronome">Calibrate</span>
-        </button>
-        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('check')">
-            <span class="mdi mdi-playlist-check">Check</span>
-        </button>
-        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('report')">
-            <span class="mdi mdi-message-text">Report</span>
-        </button>
-        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('access-point')">
-            <span class="mdi mdi-radio-tower">Access Point</span>
-        </button>
-        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('activate')">
-            <span class="mdi mdi-power-on">Activate</span>
-        </button>
-        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('deactivate')">
-            <span class="mdi mdi-power-off">Deactivate</span>
-        </button>
-    </div>
-    <div>
-        <div>State:</div>
-        <div><span class="device-mqtt-state">{{i.device.mqtt_message}}</span></div>
-    </div>
-</div>
-<div class="separator"></div>

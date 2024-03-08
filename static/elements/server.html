@@ -1,0 +1,18 @@
+<div>
+    <div class="server-info">
+        <div class="icon">
+            <span ng-show="server.connection.type == 'CONNECTED'" class="mdi mdi-server"></span>
+            <span ng-show="server.connection.type != 'CONNECTED'" class="mdi mdi-server-off "></span>
+        </div>        
+        <button type="button" class="btn btn-xs" ng-class="{'btn-warning' : server.connection.type != 'CONNECTED', 'btn-info': server.connection.type == 'CONNECTED'}" ng-click="server.connect()">
+            <span class="mdi mdi-lan-connect" >Connect</span>
+        </button>        
+        <div class="state-container">
+            <label class="server">{{server.key()}}</label>
+            <span class="state connection not-connected" ng-show="server.connection.type == 'NOT_CONNECTED'">NOT CONNECTED</span>
+            <span class="state connection connected" ng-show="server.connection.type == 'CONNECTED'">CONNECTED</span>
+            <span class="state connection connecting" ng-show="server.connection.type == 'CONNECTING'">CONNECTING</span>
+            <span ng-id="'server_lastUpdate_' + server.key()" class="last-update">{{server.lastUpdate ? ( server.lastUpdate.toLocaleString()) : ''}}</span>            
+        </div>
+    </div>        
+</div>

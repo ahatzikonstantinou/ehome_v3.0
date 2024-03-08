@@ -11,12 +11,14 @@ var Light1 = (function () {
     Light1.prototype = Object.create( MqttDevice.prototype );
     Light1.prototype.constructor = Light1;
 
+    Light1.prototype.showDeviceCommands = false;
+
     Light1.prototype.switch = function( value )
     {
         console.log( 'Light1 will send value ', value, ' to topic ', this.mqtt_subscribe_topic );
         if( this.publisher )
         {
-            var message = new Paho.MQTT.Message( value == 'ON' ? '1' : '0' );
+            var message = new Paho.Message( value == 'ON' ? '1' : '0' );
             message.destinationName = this.mqtt_subscribe_topic ;
             console.log( 'Light1 sending message: ', message.payloadString );
             this.publisher.send( message );
@@ -24,7 +26,7 @@ var Light1 = (function () {
             // this.state.main = value;//debugging
         }
     }
-
+    
     Light1.prototype.sendCommand = function( command )
     {
         console.log( 'Light1 will send command ', command );
@@ -46,7 +48,7 @@ var Light1 = (function () {
                 case "deactivate": text = "d";
                     break;
             }
-            var message = new Paho.MQTT.Message( text );
+            var message = new Paho.Message( text );
             message.destinationName = this.mqtt_subscribe_topic ;
             console.log( 'Light1 sending message: ', message.payloadString );
             this.publisher.send( message );

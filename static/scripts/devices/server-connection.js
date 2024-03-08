@@ -37,7 +37,7 @@ var ServerConnection = (function () {
         console.log( 'will refresh the connection type' );
         if( this.publisher )
         {
-            var message = new Paho.MQTT.Message( "" );
+            var message = new Paho.Message( "" );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'ServerConnection sending message: ', message, ' with publisher: ', this.publisher );
             this.publisher.send( message );

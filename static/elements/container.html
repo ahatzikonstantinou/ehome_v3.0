@@ -38,11 +38,6 @@
                 <span class="mdi mdi-vibrate mdi-camera"/>
             </button>        
 
-            <button style="float:right;" type="button" class="btn btn-sm" ng-class="{ 'btn-default': !c.gui.showMqttTopics, 'btn-primary': c.gui.showMqttTopics }" ng-click="c.gui.showMqttTopics = !c.gui.showMqttTopics">
-                    <span class="glyphicon glyphicon-info-sign"/>
-                    <!--<span class="glyphicon glyphicon-eye-open"/>-->
-                </button>
-        
             <span style="display: inline-block; margin-top:8px;">
                 <button type="button" class="btn btn-xs btn-link" ng-click="c.gui.filter.DOOR = c.gui.filter.WINDOW = c.gui.filter.LIGHT = c.gui.filter.CLIMATE = c.gui.filter.COVER = c.gui.filter.ALARM = c.gui.filter.CAMERA = c.gui.filter.MOTION = true">
                     <span data-translate="home.filters.all">All</span>
@@ -52,14 +47,24 @@
                 </button>
             </span>
 
+            <button style="float:right;" type="button" class="btn btn-sm" ng-class="{ 'btn-default': !c.gui.showMqttTopics, 'btn-primary': c.gui.showMqttTopics }" ng-click="c.gui.showMqttTopics = !c.gui.showMqttTopics">
+                <span class="glyphicon glyphicon-info-sign"/>
+                <!--<span class="glyphicon glyphicon-eye-open"/>-->
+            </button>
+    
+
         </div>
     </div>
-    <div uib-collapse="level != 0 && c.gui.collapsed">        
-        <div ng-repeat="i in c.items">
-                <item item='i' filter="filter" is-collapsed-house="c.gui.collapsed" is-collapsed-floor="false" is-collapsed-room="false" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>
+    <div class="container" uib-collapse="level != 0 && c.gui.collapsed">        
+        <div class="items">
+            <div ng-repeat="i in c.items">
+                    <item item='i' filter="c.gui.filter" is-collapsed-house="c.gui.collapsed" is-collapsed-floor="false" is-collapsed-room="false" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>
+            </div>
         </div>
-        <div ng-repeat="o in c.containers">
-            <container container='o' level="level + 1" show-label="c.containers.length > 1" expandAllChildren="c.gui.allChildrenExpanded" is-collapsed-house="c.gui.collapsed" filter="level == 1 ? c.gui.filter : filter" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>            
+        <div class="containers">
+            <div ng-repeat="o in c.containers">
+                <container container='o' level="level + 1" show-label="c.containers.length > 1" expandAllChildren="c.gui.allChildrenExpanded" is-collapsed-house="c.gui.collapsed" filter="level == 1 ? c.gui.filter : filter" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>            
+            </div>
         </div>
     </div>
 </div>

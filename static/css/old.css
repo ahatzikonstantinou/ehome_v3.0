@@ -139,12 +139,39 @@
 
 .server-info
 {
-    overflow:auto; 
-    margin:4px;
+    /* overflow:auto;  */
+    padding-top: 2px;
+    padding-left: 2px;
+    padding-right: 2px;
+    padding-bottom: 16px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    margin-left: 2px;
+    margin-right: 2px;
     border-style: solid;
     border-width: 0px 0px 1px 0px;
     border-color: #ddd;
+    /* display: inline; */
+    background-color: #fff;
 }
+
+.server-info label{
+    /* display: inline;
+    text-align: right; */
+    float: right;
+    margin-bottom: 0px;
+}
+
+.server-info .icon {
+    display: inline-block;
+    top: 6px;
+    position: relative;
+}
+
+.server-info .icon .mdi.mdi-server-off {
+    color: #a9a9a9;
+}
+
 server .items {
     /* background-color: red; */
     margin: 0px 4px 0px 5px;
@@ -409,6 +436,21 @@ and (min-width : 361px) {
     display: block;
 }
 
+.state.connection.not-connected{
+    color: red;
+}
+
+.state.connection.connected{
+    color: #46b8da;
+}
+
+.state.connection.connecting{
+    color: #dd9125;
+}
+.server-info .state-container .state.connection{
+    margin: 0px;
+}
+
 /*ahat: this makes the images and video from web cams autoresize to fill all available area*/
 .state-container > img 
 {
@@ -536,6 +578,8 @@ and (min-width : 361px) {
     border-style: solid;
     border-width: 0px 0px 1px 0px;
     border-color: #ddd;
+    width: 100%;
+    overflow: auto;
 }
 
 .separator
@@ -552,7 +596,8 @@ and (min-width : 361px) {
 
 label.house
 {
-    font-size: 18px;
+    font-size: 20px;
+    float: right;
 }
 .house-container {
     margin: 5px;    
@@ -583,8 +628,8 @@ room > div > div
 
 label.floor
 {
-    font-size: 16px;
-    /*font-weight: normal;*/
+    font-size: 18px;
+    float:right;
 }
 
 label.room
@@ -594,7 +639,10 @@ label.room
     padding: 2px 8px 2px 8px;
     font-size: 15px;
     font-weight: bolder;
-    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    color: #666;
+    /* font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; */
+    float:right;
+
     /*border-radius: 3px;
     border-color: #ccc;
     border-style: solid;

@@ -19,7 +19,7 @@ var Alarm = (function() {
         console.log( 'Alarm will send value ', value, ' to topic ', this.mqtt_publish_topic );
         if( this.publisher )
         {
-            var message = new Paho.MQTT.Message( value );
+            var message = new Paho.Message( value );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'Alarm sending message: ', message );
             this.publisher.send( message );
@@ -31,7 +31,7 @@ var Alarm = (function() {
         console.log( 'alarm will send a deactivate request command' );
         if( this.publisher )
         {
-            var message = new Paho.MQTT.Message( 'DEACTIVATE_REQUEST' );
+            var message = new Paho.Message( 'DEACTIVATE_REQUEST' );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'Alarm sending message: ', message );
             this.publisher.send( message );
@@ -43,7 +43,7 @@ var Alarm = (function() {
         console.log( 'alarm will send a deactivate command with pin: ', pin );
         if( ( 'TRIGGERED' == this.state.main || 'ACTIVATED' == this.state.main ) && this.publisher )
         {
-            var message = new Paho.MQTT.Message( '{"cmd":"DEACTIVATE", "pin":"' + pin + '"}' );
+            var message = new Paho.Message( '{"cmd":"DEACTIVATE", "pin":"' + pin + '"}' );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'Alarm sending message: ', message );
             this.publisher.send( message );
@@ -55,7 +55,7 @@ var Alarm = (function() {
         console.log( 'alarm will send a arm_home command' );
         if( 'UNARMED' == this.state.main && this.publisher )
         {
-            var message = new Paho.MQTT.Message( 'ARM_HOME' );
+            var message = new Paho.Message( 'ARM_HOME' );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'Alarm sending message: ', message );
             this.publisher.send( message );
@@ -67,7 +67,7 @@ var Alarm = (function() {
         console.log( 'alarm will send a arm_away command' );
         if( 'UNARMED' == this.state.main && this.publisher )
         {
-            var message = new Paho.MQTT.Message( 'ARM_AWAY' );
+            var message = new Paho.Message( 'ARM_AWAY' );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'Alarm sending message: ', message );
             this.publisher.send( message );
@@ -79,7 +79,7 @@ var Alarm = (function() {
         console.log( 'alarm will send a DISARM command' );
         if( this.publisher )
         {
-            var message = new Paho.MQTT.Message( 'DISARM' );
+            var message = new Paho.Message( 'DISARM' );
             message.destinationName = this.mqtt_publish_topic ;
             console.log( 'Alarm sending message: ', message );
             this.publisher.send( message );

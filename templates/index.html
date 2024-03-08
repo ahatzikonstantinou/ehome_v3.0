@@ -38,7 +38,94 @@ $def with (mqtt_servers, containers, domains, item_types, items)
         // mqttServer data
         var mqttServers = [
             $for server in mqtt_servers:
-                { id: $(loop.index-1), address: "$server['address']", port: "$server['port']", ws_port: "$server['ws_port']", username: "$(server['username'] if server['username'] is not None else "null" )", password: "$(server['password'] if server['password'] is not None else "null" )"},
+                { 
+                    id: $(loop.index0), 
+                    address: "$server['address']", 
+                    port: "$server['port']", 
+                    ws_port: "$server['ws_port']", 
+                    username: "$(server['username'] if server['username'] is not None else "null" )", 
+                    password: "$(server['password'] if server['password'] is not None else "null" )",
+                    subscribptions: {},
+                    connection: { type: 'NOT_CONNECTED' },
+                    lastUpdate: null,
+                    connect: function(){
+                        this.updateConnecting();
+                        try
+                        {
+                            // first attempt tot disconnect
+                            console.log("client: ", client);
+                            for (const [key, value] of Object.entries(client)) 
+                            {
+                                // ATTENTION: only attempt a disconnect if the client is connected or else we crash
+                                if(value != null && value != undefined && key == this.key() && this.connection.type == 'CONNECTED')
+                                {
+                                    console.log(`Disconnecting from mqtt server: $${key}, client: $${value}`);
+                                    try
+                                    {
+                                        value.disconnect();
+                                    }
+                                    catch(e)
+                                    {
+                                        console.error("Disconnect failed");
+                                        console.error(e);
+                                    }
+                                    break;
+                                }
+                            }
+                            this.connection.type = 'CONNECTING';
+                            // ATTENTION: this web paho client must connect to the mqtt server's ws_port, not the regular port
+                            client[this.key()] = new Paho.Client(this.address, Number(this.ws_port), "clientId" + Math.random());
+                            client[this.key()].onConnectionLost = onConnectionLost;
+                            client[this.key()].onMessageArrived = onMessageArrived;
+                            client[this.key()].connect({ 
+                                timeout: 5,
+                                reconnect: false,
+                                onFailure: onFailure,
+                                onSuccess: onConnect, 
+                                invocationContext: this // pass the server as argument to the callback success function
+                            });
+                        }
+                        catch(e)
+                        {
+                            console.warn("Connection to " + this.key() + " failed.");
+                            console.error(e);
+                        }
+                    },
+                    key: function(){ return this.address + ":" + this.ws_port;},
+                    updateConnected: function(){
+                        this.connection.type = 'CONNECTED';
+                        this.lastUpdate = new Date();
+                        let id  = 'server_lastUpdate_' + this.key();
+                        let element = document.getElementById(id);
+                        if(element != null)
+                        {
+                            element.textContent = this.lastUpdate.toLocaleString();
+                            compileNgShow();
+                        }
+                    },
+                    updateDisconnected: function(){
+                        this.connection.type = 'NOT_CONNECTED';
+                        this.lastUpdate = new Date();
+                        let id  = 'server_lastUpdate_' + this.key();
+                        let element = document.getElementById(id);
+                        if(element != null)
+                        {
+                            element.textContent = this.lastUpdate.toLocaleString();
+                            compileNgShow();
+                        }
+                    },
+                    updateConnecting: function(){
+                        this.connection.type = 'CONNECTING';
+                        this.lastUpdate = new Date();
+                        let id  = 'server_lastUpdate_' + this.key();
+                        let element = document.getElementById(id);
+                        if(element != null)
+                        {
+                            element.textContent = this.lastUpdate.toLocaleString();
+                            compileNgShow();
+                        }
+                    }
+                },
         ];
 
         var containersList = [
@@ -69,6 +156,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     publish: "$item['publish']",
                     subscribe: "$item['subscribe']",
                     state: "UNKNOWN",
+                    showDeviceCommands: false,
                     // for cameras
                     url: null,
                     baseUrl: null,
@@ -93,39 +181,92 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                         MOTION: true                        
                     };
 
+        var deviceHtmlTemplateCache = [];
+
         const client = {};
 
         function connectToMqtt(server) {
             console.log(server);
-
-            client[server['address']] = new Paho.Client(server.address, Number(server.ws_port), "clientId" + Math.random());
-            client[server['address']].onConnectionLost = onConnectionLost;
-            client[server['address']].onMessageArrived = onMessageArrived;
-            client[server['address']].connect({ onSuccess: onConnect, invocationContext: server });
+            server.connect(client);
         }
 
         function onConnect(connectOptions) {
-            console.log("Connected to MQTT server " + connectOptions.invocationContext['address'] + ":" + connectOptions.invocationContext['ws_port']);
-            client[connectOptions.invocationContext['address']].subscribe("test/topic");
+            let server = connectOptions.invocationContext;
+            server.connection.type = 'CONNECTED';
+            console.log("Connected to ", server);
+            server.updateConnected();
+
+            // console.log("Connected to MQTT server " + connectOptions.invocationContext['address'] + ":" + connectOptions.invocationContext['ws_port']);
+            // client[connectOptions.invocationContext['address']+":"+connectOptions.invocationContext['ws_port']].subscribe("test/topic");
+
+            
+            items.forEach(i => {
+                // create the array of subscribed devices if no device has been subscribed yet
+                if(server.subscribptions[i.publish] == null || server.subscribptions[i.publish] == undefined)
+                {
+                    server.subscribptions[i.publish] = [];
+                    console.log("creating subscriptions dictionary entry for topic: " + i.publish);
+                }
+            
+                server.subscribptions[i.publish].push(i.device);  // register the device for this topic
+                client[server.key()].subscribe(i.publish);        // subscribe to the device's publish topic
+            
+                i.device.setPublisher(client[server.key()]); // tell each device that this client is its publisher for sending mqtt messages
+            });
         }
 
         function onConnectionLost(responseObject) {
             if (responseObject.errorCode !== 0) {
-                console.log("Connection lost:", responseObject.errorMessage);
+                let server = mqttServers.filter(s => s.key() == (this.host + ":" + this.port))[0];
+                server.connection.type = 'NOT_CONNECTED';
+                console.log("Connection lost:", responseObject.errorMessage, " on server: ", server);
             }
         }
 
+        function onFailure(errorMessage) {
+            console.error('Failed to connect to MQTT broker. Error: ' + errorMessage.errorMessage, ", this: ", this);
+            let server = this.invocationContext;
+            server.updateDisconnected();
+        }
+ 
         var configuration_str = "";
         function onMessageArrived(message) {
+            // console.log("this: ", this);
+            // console.log("new message: " + message.topic + message.payloadString, message);
+            let server = mqttServers.filter(s => s.key() == (this.host + ":" + this.port))[0];
+            server.subscribptions[message.topic].forEach(d => d.update(message.topic, message.payloadString));
+            server.lastUpdate = new Date();
+            let id = "server_lastUpdate_" + server.key()
+            document.getElementById(id).textContent = server.lastUpdate.toLocaleString();
+            console.log("new content of element id:" + id + ", element: ", element);
+            return;
+
             if(message.payloadString != configuration_str)
             {
                 console.log("New configuration.");
+                try
+                {
+                    // in case we are called after a configuration refresh, first disconnect already conencted clients
+                    for (const [key, value] of Object.entries(client)) 
+                    {
+                        if(value != null && value != undefined)
+                        {
+                            console.log(`Disconnecting from mqtt server: $${key}, client: $${value}`);
+                            value.disconnect();
+                        }
+                    }
+                }
+                catch(e)
+                {
+                    console.error(e);
+                }
+
                 configuration_str = message.payloadString;
                 let configuration = JSON.parse(configuration_str);
                 mqttServers = configuration.mqttServers;
                 containersList = configuration.containers;
                 item_types = configuration.item_types;
-                items = configuration.items;
+                items = configuration.items;                
                 initContent();
             }
             else
@@ -139,37 +280,47 @@ $def with (mqtt_servers, containers, domains, item_types, items)
         }
 
         const customElementDirectives = [
-                {
-                    elements: ["container"], 
-                    attributesToContext: [
-                        { attribute: "container", contextProperty: 'c'},
-                        { attribute: "level", contextProperty: 'level'},
-                        { attribute: "show-label", contextProperty: 'showLabel'},
-                        { attribute: "expandAllChildren", contextProperty: 'expandAllChildren'},
-                        { attribute: "is-collapsed-house", contextProperty: 'isCollapsedHouse'},
-                        { attribute: "filter", contextProperty: 'filter'},
-                        { attribute: "show-mqtt-topics", contextProperty: 'showMqttTopics'}
-                    ]
-                },
-                {
-                    elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto"], 
-                    attributesToContext: [
-                        { attribute: "item", contextProperty: 'i'},
-                        { attribute: "filter", contextProperty: 'filter'},
-                        { attribute: "is-collapsed-house", contextProperty: 'isCollapsedHouse'},
-                        { attribute: "is-collapsed-floor", contextProperty: 'isCollapsedFloor'},
-                        { attribute: "is-collapsed-room", contextProperty: 'isCollapsedRoom'},
-                        { attribute: "show-mqtt-topics", contextProperty: 'showMqttTopics'}
+            {
+                elements: ["server"],
+                attributesToContext: [{ attribute: "server", contextProperty: 'server'}]
+            },
+            {
+                elements: ["container"], 
+                attributesToContext: [
+                    { attribute: "container", contextProperty: 'c'},
+                    { attribute: "level", contextProperty: 'level'},
+                    { attribute: "show-label", contextProperty: 'showLabel'},
+                    { attribute: "expandAllChildren", contextProperty: 'expandAllChildren'},
+                    { attribute: "is-collapsed-house", contextProperty: 'isCollapsedHouse'},
+                    { attribute: "filter", contextProperty: 'filter'},
+                    { attribute: "show-mqtt-topics", contextProperty: 'showMqttTopics'}
+                ]
+            },
+            {
+                elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto"], 
+                attributesToContext: [
+                    { attribute: "item", contextProperty: 'i'},
+                    { attribute: "filter", contextProperty: 'filter'},
+                    { attribute: "is-collapsed-house", contextProperty: 'isCollapsedHouse'},
+                    { attribute: "is-collapsed-floor", contextProperty: 'isCollapsedFloor'},
+                    { attribute: "is-collapsed-room", contextProperty: 'isCollapsedRoom'},
+                    { attribute: "show-mqtt-topics", contextProperty: 'showMqttTopics'}
 
-                    ]
-                }                
-            ];
+                ]
+            }                
+        ];
 
         var language = 'el';
+
         // Observe changes in variables and recompile directives accordingly
         var containers = [];
         var hiddenContainers = [];
+        
         var proxyContainerRecompileNgClass = false;
+        
+        // other proxied objects that will trigger recompile of ngClass
+        var otherProxies = [];
+
         window.onload = function () {
             console.log("window.onload");
             initContent();
@@ -201,12 +352,14 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 compileNgRepeat();
                 compileCustomElements();
             }
-            compileNgInit();
+            // compileNgInit(); see TODO comment inside compileNgInit()
+            compileNgId();
             compileNgShow();
             compileUibCollapse();
             compileNgClass();
             evalValues(null, document.getElementById('content'));
             compileNgClick();
+            compileNgDisabled();
             
             // for reacting to changes in the document
             const observer = new MutationObserver(() => {
@@ -220,7 +373,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             });
 
             proxyContainerRecompileNgClass = true;
-            console.log("full text: ", document.getElementById("content").innerHTML);            
+            // console.log("full text: ", document.getElementById("content").innerHTML);            
         }
 
         function createProxy(obj) {
@@ -234,15 +387,14 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     // console.log(`Setting $${property} to `,value);
                     const success = Reflect.set(target, property, value, receiver);
                     if (success) {
-                        // console.log("set operaton was successfull");
+                        // console.log("set operaton was successfull, proxyContainerRecompileNgClass: " + proxyContainerRecompileNgClass);
                         if(proxyContainerRecompileNgClass)
                         {
-                            // proxyContainerRecompileNgClass = false;
                             compileNgIf();
                             compileUibCollapse();
                             compileNgShow();
                             compileNgClass();
-                            // proxyContainerRecompileNgClass = true;
+                            compileNgDisabled();
                         }
                     }
                     return success;
@@ -252,6 +404,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
 
         function createProxiedContainer(obj) {
             // Create a proxy for the object itself
+            // it is good not just for containers but for any object with other
+            // nested objects as properties
             const proxiedObject = createProxy(obj);
 
             // Create proxies for each property that is an object or an array
@@ -416,6 +570,9 @@ $def with (mqtt_servers, containers, domains, item_types, items)
         }
 
         function compileNgInit() {
+            // TODO: this does not really work. Besides all variables declared in ng-init
+            // are device specific flags used to indicate if some device property should be
+            // displayed, mainly in camera elements. Move these variables into the device.
             const elements = document.querySelectorAll('[ng-init]');
             elements.forEach(element => {
                 const expression = element.getAttribute('ng-init');
@@ -430,7 +587,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     {
                         // define arrays before assignment
                         const arrays = expression.split(";").map(s => {a = s.split("=")[0].trim(); if(a.indexOf("[") > -1) return a.split("[")[0]; else return null;}).filter(a => a != null && a != undefined).forEach(v => {
-                            let defExpr = "window." + v + "=[];";
+                            let defExpr = "" + v + "=[];";
+                            defExpr += "otherProxies.push(createProxiedContainer." + v +");";
                             console.log("compileNgInit declares array: '" + defExpr + "'");
                             console.log(eval(defExpr));
                         });
@@ -542,6 +700,33 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             });
         }
     
+        function compileNgId() {
+            // My own idea. Gives elements an id based on ng-id directive
+            const elements = document.querySelectorAll('[ng-id]');
+            elements.forEach(element => {
+                const expr = element.getAttribute('ng-id');
+                console.log("ng-id eval of '" + expr + "'");
+                if (expr) {
+                    element.setAttribute("id", evaluateExpression(expr));
+                }
+            });
+        }
+        
+        function compileNgDisabled() {
+            const elements = document.querySelectorAll('[ng-disabled]');
+            elements.forEach(element => {
+                const condition = element.getAttribute('ng-disabled');
+                if (condition) {
+                    const isDisabled = evaluateCondition(condition);
+                    if (!isDisabled) {
+                        element.disabled = false;
+                    } else {
+                        element.disabled = true;
+                    }
+                }
+            });
+        }
+        
         function compileNgShow() {
             const elements = document.querySelectorAll('[ng-show]');
             elements.forEach(element => {
@@ -839,6 +1024,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 try
                 {
                     // console.log("Will eval " + expr );
+                    let evalExpr = eval(expr) + parts[1];
+                    // console.log("evaluation = " + evalExpr);
                     return eval(expr) + parts[1]; 
                 }
                 catch(e)
@@ -1035,17 +1222,37 @@ $def with (mqtt_servers, containers, domains, item_types, items)
 
         function getContentsFromFile(filename)
         {
-            // console.log("Getting contents of '" + filename);
+            // console.log("Getting contents of " + filename);
             let result = {response:  "", found: false};
             if (filename) {
+                let cachedTemplate = null;
+                // ahat: for some unknown reason deviceHtmlTemplateCache.filter(c => c.filenmame === filename)) does not work here, it returns nothing
+                for(let i = 0 ; i < deviceHtmlTemplateCache.length ; i++)
+                {
+                    if(deviceHtmlTemplateCache[i].filename == filename)
+                    {
+                        cachedTemplate = deviceHtmlTemplateCache[i];
+                        // console.log("Found match but deviceHtmlTemplateCache.filter says: ", deviceHtmlTemplateCache.filter(c => c.filenmame === filename))
+                        break;
+                    }
+                }
+                
+                if(cachedTemplate != null )
+                {
+                    // console.log("Found cache of '" + filename + ": ", cachedTemplate);
+                    result.response = cachedTemplate.text;
+                    result.found = true;
+                    return result;
+                }
+
                 xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4) {
                         if (this.status == 200) 
                         {
-                            // console.log("Returning contents of " + filename);
                             result.response = this.responseText;
                             result.found = true;
+                            deviceHtmlTemplateCache.push({filename: filename, text: this.responseText });
                         }
                         if (this.status == 404) 
                         {
@@ -1125,7 +1332,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     item.device = new IPCameraPanTilt( item.baseUrl, item.videostream, item.right, item.left, item.up, item.down, item.stop );
                     break;
                 case 'LIGHT1':
-                    item.device = new Light1( item.publish, item.subscribe, { state: 'offline' } );
+                    item.device = new Light1( item.publish, item.subscribe, { state: 'UNAVAILABLE' } );
                     break;
                 case 'LIGHT2':
                     item.device = new Light2( item.publish, item.subscribe, { left: 'ON', right: 'OFF' } );
@@ -1167,6 +1374,11 @@ $def with (mqtt_servers, containers, domains, item_types, items)
 </head>
 <body>
     <div id="content">
+        <div class="servers">
+            <div ng-repeat="s in mqttServers">
+                <server server="s"></server>
+            </div>
+        </div>
         <div ng-repeat="o in containers">
             <container container='o' level="1" show-label="true" expandAllChildren="true" is-collapsed-house="false" filter="filter" show-mqtt-topics="showMqttTopics"/>
         </div>
