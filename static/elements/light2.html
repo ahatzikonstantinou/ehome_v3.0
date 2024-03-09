@@ -13,6 +13,7 @@
             </button> 
         </div>    
         <div class="state-container">
+            <div>
             <!--<button type="button" class="btn btn-xs" ng-class="{ 'btn-warning': i.device.state.main == 'ON', 'btn-info': i.device.state.main == 'OFF' }" ng-click="i.device.state.main == 'ON' ? i.device.state.main = 'OFF' : i.device.state.main = 'ON'">-->
             <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning device-on': i.device.state.left == 'ON', 'btn-info device-off': i.device.state.left == 'OFF', 'unavailable': i.device.state.left == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF'), 'switch-on': i.device.state.left == 'ON', 'switch-off': i.device.state.left == 'OFF' }" ng-click="i.device.state.left == 'ON' ? i.device.switchLeft( 'OFF' ) : i.device.switchLeft( 'ON' )" ng-disabled="i.device.state.left == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF')" data-translate="{{'home.state.' + i.device.state.left}}" onfocus="this.blur();">
                 <span ng-show="i.device.state.left == 'ON'">ON</span>
@@ -24,7 +25,10 @@
                 <span ng-show="i.device.state.right == 'OFF'">OFF</span>
                 <span ng-show="i.device.state.right == 'UNAVAILABLE'">UNAVAILABLE</span>
             </button>
-            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            </div>
+            <div>
+                <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
+            </div>
         </div>
     </div>
     <div ng-show="i.device.showDeviceCommands">    

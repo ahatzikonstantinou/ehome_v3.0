@@ -10,7 +10,17 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
     <script>
         var items = [
                 $for item in items:
-                    { id: $(loop.index-1), itemName: "$item['itemName']", itemMqttServer: $item['itemMqttServer'], itemContainer: "$item['itemContainer']", itemType: "$item['itemType']", publish: "$item['publish']", subscribe: "$item['subscribe']" },
+                    { 
+                        id: $(loop.index0), 
+                        itemName: "$item['itemName']", 
+                        itemMqttServer: $item['itemMqttServer'], 
+                        itemContainer: "$item['itemContainer']", 
+                        itemType: "$item['itemType']", 
+                        publish: "$item['publish']", 
+                        subscribe: "$item['subscribe']",
+                        filterById: ${ 'true' if item['filterById'] else 'false' },
+                        idFilterValue: "$item['idFilterValue']"
+                    },
             ];
             
     </script>
@@ -20,7 +30,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
     <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', true);toggleContent('items', false);">Containers</button>
     <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', false);toggleContent('items', true);">Items</button>
 
-    <div id="mqtt_servers" $("hidden" if showSection != "mqtt" else "")>        
+    <div class="settings servers" id="mqtt_servers" $("hidden" if showSection != "mqtt" else "")>        
         <h1>MQTT Servers</h1>
         <h2>Add New Server</h2>
         <form id="serverForm" action="/create/mqtt-server" method="post">
@@ -121,7 +131,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
         </script>
     </div>
 
-    <div id="containers" $("hidden" if showSection != "containers" else "")>
+    <div class="settings containers" id="containers" $("hidden" if showSection != "containers" else "")>
         <h1>Containers</h1>
         <h2>Create Container</h2>
         <form id="containerForm" action="/create/container" method="post">
@@ -263,7 +273,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
         </script>
     </div>
 
-    <div id="items" $("hidden" if showSection != "items" else "")> 
+    <div class="settings items" id="items" $("hidden" if showSection != "items" else "")> 
         <h1>Items</h1>
         <h2>Create Item</h2>
         <form id="itemForm" action="/create/item" method="post">
@@ -299,6 +309,14 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
             <div class="form-group">
                 <label for="subscribe">MQTT Subscribe Topic:</label>
                 <input type="text" id="subscribe" name="subscribe">
+            </div>
+            
+            <div class="form-group">
+                <label for="filterById">Filter by Id:</label>
+                <div style="display: flex;">
+                    <input type="checkbox" id="filterById" name="filterById">
+                    <input type="text" id="idFilterValue" name="idFilterValue">
+                </div>
             </div>
             
             <button id="createItemBtn" type="submit">Create Item</button>
@@ -410,6 +428,9 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
                 document.getElementById("itemType").value = items[id].itemType;
                 document.getElementById("publish").value = items[id].publish;
                 document.getElementById("subscribe").value = items[id].subscribe;
+                document.getElementById("idFilterValue").value = items[id].idFilterValue;
+                console.log("filterById: " + items[id].filterById);
+                document.getElementById("filterById").checked = items[id].filterById === true;
                 document.getElementById("itemForm").action = "/update/item/" + id;
                 document.getElementById("createItemBtn").innerText = "Update Item";
                 document.getElementById("cancelItemBtn").hidden = false;

@@ -18,7 +18,7 @@
                 <span class="state" ng-class="{ 'warning': i.device.state.left == 'OPEN', 'info': i.device.state.left == 'CLOSED', 'unavailable': i.device.state.left == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.left}}">{{i.device.state.left}}</span>
                 <span class="state" ng-class="{ 'warning': i.device.state.right == 'OPEN', 'info': i.device.state.right == 'CLOSED', 'unavailable': i.device.state.right == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.right}}">{{i.device.state.right}}</span>
             </div>
-            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
     </div>
 </div>

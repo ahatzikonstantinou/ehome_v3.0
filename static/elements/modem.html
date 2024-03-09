@@ -19,7 +19,7 @@
                 <button type="button" class="btn btn-xs state" ng-class="{ 'btn-warning switch-on': m.state == 'registered', 'btn-info switch-off': m.state == 'disabled' || m.state == 'enabling' }" ng-click="m.state == 'registered' ? i.device.disable( m.id ) : ( m.state == 'disabled' ? i.device.enable( m.id ) : null )" data-translate="{{'modem.state.' + m.state}}" ng-disabled="m.state == 'enabling'">
                     {{m.state}}
                 </button>
-                <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+                <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
             </div>
 
             <div class="device-buttons">

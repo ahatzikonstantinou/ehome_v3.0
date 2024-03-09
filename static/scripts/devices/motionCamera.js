@@ -44,12 +44,12 @@ var MotionCamera = (function () {
                 if( data.state )
                 {                        
                     this.state = data.state;
-                    this.lastUpdate = Date.now();
+                    this.lastUpdateDate = new Date().toLocaleString();
                 }
                 else if( data.detection )
                 {
                     this.detection = data.detection;
-                    this.lastDetection = Date.now();
+                    this.lastDetection = new Date().toLocaleString();
                 }
                 else if( data.picture )
                 {

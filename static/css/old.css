@@ -433,7 +433,7 @@ and (min-width : 361px) {
     cursor: default;
     max-width:100%;
     max-height:100%;
-    display: block;
+    flex-grow: 1;
 }
 
 .state.connection.not-connected{
@@ -479,7 +479,7 @@ and (min-width : 361px) {
     /* line-height: 1; */
 }
 
-/*ahat: used in e.g. MOTIONCAMERAPANTILT with lastupdate and state in one row*/
+/*ahat: used in e.g. MOTIONCAMERAPANTILT with lastupdateDate and state in one row*/
 .state-row
 {
     display: block;

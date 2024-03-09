@@ -15,7 +15,7 @@
             <span class="state humidity mdi mdi-water"  ng-class="{'unavailable': i.device.state.main == 'UNAVAILABLE' }">
                 {{i.device.state.main == 'UNAVAILABLE' ? '--' : i.device.state.humidity}}%
             </span>
-            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
     </div>
 </div>

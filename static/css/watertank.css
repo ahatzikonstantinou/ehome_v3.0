@@ -1,0 +1,144 @@
+/* Classes used for the widgets representing water tanks in the home page */
+.percent-bar.normal {
+    background-color: cyan;
+}
+
+.percent-bar.warning {
+    background-color: yellow;
+}
+
+@-webkit-keyframes critical {    
+    from, to {    
+        background-color: transparent    
+    }    
+    50% {    
+        background-color: red    
+    }    
+}    
+@keyframes critical {    
+    from, to {    
+        background-color: transparent    
+    }    
+    50% {    
+        background-color: red    
+    }    
+}    
+
+.percent-bar.critical {        
+    -webkit-animation: critical 1s step-end infinite;    
+    animation: critical 1s step-end infinite;    
+}
+
+
+@-webkit-keyframes overflow {    
+    from, to {    
+        background-color: transparent    
+    }    
+    50% {    
+        background-color: lightskyblue    
+    }    
+}    
+@keyframes overflow {    
+    from, to {    
+        background-color: transparent    
+    }    
+    50% {    
+        background-color: lightskyblue    
+    }    
+}    
+
+.percent-bar.overflow {        
+    -webkit-animation: overflow 1s step-end infinite;    
+    animation: overflow 1s step-end infinite;    
+}
+
+
+.percent-bar.sensor_error {
+    background-color: grey;
+}
+
+.watertank .water-tank-label {
+    font-weight: bold;
+    color: #333;
+}
+
+
+@-webkit-keyframes last_updated_exceeded {    
+    from, to {    
+        color: transparent    
+    }    
+    20% {    
+        color: #c00;    
+    }    
+}    
+@keyframes last_updated_exceeded {    
+    from, to {    
+        color: transparent    
+    }    
+    20% {    
+        color: #c00;    
+    }    
+}    
+
+.watertank .last_updated.exceeded {        
+    -webkit-animation: last_updated_exceeded 2s step-end infinite;    
+    animation: last_updated_exceeded 2s step-end infinite;    
+}
+
+.watertank .last_updated {
+    font-size: 0.92em;
+    color: rgb(70,70,70);
+}
+
+.watertank h4 {
+    position: relative;
+    display: flex;
+    line-height: 24px;
+    justify-content: center;
+    align-items: center;
+    margin: auto;
+    vertical-align: middle;
+}
+
+.watertank h4 .percent_str {
+    position: relative;
+    top: 0.2em;
+}
+
+.watertank h4 .sensor_error {
+    background-image: url('/static/images/warning-icon24x24.png');
+    background-repeat: no-repeat;
+    padding-bottom: 24px;
+    margin: 0px;
+    width: 27px;
+    display: inline;    
+}
+
+.watertank h4 .disabled {
+    color: #999;
+    position: relative;
+    top: 0.3em;
+    height: 24px;
+}
+
+.watertank .watertank-bar {
+    width: 100%;
+    height: 2em;
+    background-color: lightcyan;
+    border-radius: 10px;
+    border:1px solid cyan;
+    text-align: center;
+    vertical-align: middle;
+    position: relative;
+    overflow: hidden;
+}
+.watertank .unavailable {
+    background-color: #d9d9d9;
+    color: #fff;
+    cursor: not-allowed;
+    font-size: 12px;
+    text-align: center;
+    line-height: 2em;
+    height: 2em;
+    padding: 2px;
+}

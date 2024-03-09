@@ -83,6 +83,7 @@ item_types = [
     { "id":"MOTIONCAMERAPANTILT", "description": "Motion Camera pan-tilt"}, 
     { "id":"IPCAMERA", "description": "IP Camera"}, 
     { "id":"MOTIONCAMERA", "description": "Motion Camera"},
+    { "id":"WATERTANK", "description": "Water tank"},
 ]
  
 render = web.template.render('templates/')
@@ -281,6 +282,8 @@ class CreateItem:
         itemType = data.get('itemType')
         publish = data.get('publish')
         subscribe = data.get('subscribe')
+        filterById = 'filterById' in data
+        idFilterValue = data.get('idFilterValue')
 
         items.append({
             'itemName': itemName,
@@ -289,6 +292,8 @@ class CreateItem:
             'itemType': itemType,
             'publish': publish,
             'subscribe': subscribe,
+            'filterById': filterById,
+            'idFilterValue': idFilterValue
         })
         
         with open(items_file_path, 'w') as f:
@@ -309,6 +314,8 @@ class UpdateItem:
             items[item_id]['itemType'] = data.get('itemType')
             items[item_id]['publish'] = data.get('publish')
             items[item_id]['subscribe'] = data.get('subscribe')
+            items[item_id]['filterById'] = 'filterById' in data
+            items[item_id]['idFilterValue'] = data.get('idFilterValue')
             
             with open(items_file_path, 'w') as f:
                 json.dump(items, f, indent=4)

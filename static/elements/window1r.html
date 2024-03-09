@@ -17,7 +17,7 @@
                 {{i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline }}
             </span>
             </div>
-            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
     </div>
 </div>

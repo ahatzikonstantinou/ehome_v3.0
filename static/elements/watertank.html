@@ -1,0 +1,81 @@
+<div class="device-panel" ng-show="filter.LIGHT">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+        <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+    </div>
+
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi mdi-storage-tank device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.showDeviceCommands = !i.device.showDeviceCommands">
+                <span class="mdi mdi-dots-horizontal"></span>
+            </button>    
+        </div>
+        <div class="state-container">
+            <div class="watertank" ng-id="i.device.id" style="text-align: right; display: block;">
+                    <div class="watertank-bar" ng-class="{'unavailable' : i.device.watertank.state == 'unavailable'}">
+                        <div class="percent-bar normal" 
+                        ng-class="{
+                            'normal' : i.device.watertank.state == 'normal',
+                            'warning' : i.device.watertank.state == 'warning',
+                            'critical' : i.device.watertank.state == 'critical',
+                            'overflow' : i.device.watertank.state == 'overflow',
+                            'sensor_error' : i.device.watertank.state == 'sensor_error'
+                        }" style="width: 31%;
+                            height: 100%;
+                            position: absolute;
+                            z-index: 2;">
+                        </div>
+                        <div class="status-bar-text" style="width: 100%;
+                            height: 100%;
+                            z-index: 3;
+                            position: absolute;">
+                            <h4 class="normal" style="vertical-align: middle;line-height:1em;" 
+                                ng-class="{
+                                    'normal' : i.device.watertank.state == 'normal',
+                                    'warning' : i.device.watertank.state == 'warning',
+                                    'critical' : i.device.watertank.state == 'critical',
+                                    'overflow' : i.device.watertank.state == 'overflow'
+                                }">
+                                <span class="percent_str" ng-show="i.device.watertank.enabled && i.device.watertank.state != 'sensor_error'" ng-textContent="i.device.watertank.str_percentage"></span>
+                                <span class="mdi mdi-close-circle-outline disabled" ng-show="!i.device.watertank.enabled"></span>
+                                <span class="sensor_error" ng-show="i.device.watertank.state == 'sensor_error'"></span>
+                                <h4 class="unavailable" ng-show="i.device.watertank.state == 'unavailable'">UNAVAILABLE</h4>
+                            </h4>
+                        </div>
+                  </div>
+              </div>
+
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
+        </div>
+    </div>
+    <div ng-show="i.device.showDeviceCommands">    
+        <div>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('calibrate')">
+                <span class="mdi mdi-metronome">Calibrate</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('check')">
+                <span class="mdi mdi-playlist-check">Check</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('report')">
+                <span class="mdi mdi-message-text">Report</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('access-point')">
+                <span class="mdi mdi-radio-tower">Access Point</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('activate')">
+                <span class="mdi mdi-power-on">Activate</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('deactivate')">
+                <span class="mdi mdi-power-off">Deactivate</span>
+            </button>
+        </div>
+        <div>
+            <div>State:</div>
+            <div><span class="device-mqtt-state">{{i.device.mqtt_message}}</span></div>
+        </div>
+    </div>
+    <!-- <div class="separator"></div> -->
+</div>

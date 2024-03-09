@@ -19,7 +19,8 @@
                 data-translate="{{'home.alarm.' + i.device.state.main}}">
                     {{i.device.state.main}} 
             </span>
-            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
     </div>
 </div>

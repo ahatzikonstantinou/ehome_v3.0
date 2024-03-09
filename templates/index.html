@@ -28,104 +28,29 @@ $def with (mqtt_servers, containers, domains, item_types, items)
     <script src="/static/scripts/devices/net.js"></script>
     <script src="/static/scripts/devices/roller1.js"></script>
     <script src="/static/scripts/devices/roller1_auto.js"></script>
-    <script src="/static/scripts/devices/server-connection.js"></script>
+    <script src="/static/scripts/devices/server.js"></script>
     <script src="/static/scripts/devices/temperature_humidity.js"></script>
+    <script src="/static/scripts/devices/watertank.js"></script>
+    <link rel="stylesheet" href="/static/css/watertank.css">
     <script src="/static/scripts/devices/window1.js"></script>
     <script src="/static/scripts/devices/window1r.js"></script>
     <script src="/static/scripts/devices/window2r.js"></script>
 
     <script>
         // mqttServer data
+        var hiddenServers = []; //will hold the actual servers. Later in window.load the servers
+                                // array will hold proxies of the server objects in order to 
+                                // update the screen when a property of the server changes.
         var mqttServers = [
             $for server in mqtt_servers:
-                { 
-                    id: $(loop.index0), 
-                    address: "$server['address']", 
-                    port: "$server['port']", 
-                    ws_port: "$server['ws_port']", 
-                    username: "$(server['username'] if server['username'] is not None else "null" )", 
-                    password: "$(server['password'] if server['password'] is not None else "null" )",
-                    subscribptions: {},
-                    connection: { type: 'NOT_CONNECTED' },
-                    lastUpdate: null,
-                    connect: function(){
-                        this.updateConnecting();
-                        try
-                        {
-                            // first attempt tot disconnect
-                            console.log("client: ", client);
-                            for (const [key, value] of Object.entries(client)) 
-                            {
-                                // ATTENTION: only attempt a disconnect if the client is connected or else we crash
-                                if(value != null && value != undefined && key == this.key() && this.connection.type == 'CONNECTED')
-                                {
-                                    console.log(`Disconnecting from mqtt server: $${key}, client: $${value}`);
-                                    try
-                                    {
-                                        value.disconnect();
-                                    }
-                                    catch(e)
-                                    {
-                                        console.error("Disconnect failed");
-                                        console.error(e);
-                                    }
-                                    break;
-                                }
-                            }
-                            this.connection.type = 'CONNECTING';
-                            // ATTENTION: this web paho client must connect to the mqtt server's ws_port, not the regular port
-                            client[this.key()] = new Paho.Client(this.address, Number(this.ws_port), "clientId" + Math.random());
-                            client[this.key()].onConnectionLost = onConnectionLost;
-                            client[this.key()].onMessageArrived = onMessageArrived;
-                            client[this.key()].connect({ 
-                                timeout: 5,
-                                reconnect: false,
-                                onFailure: onFailure,
-                                onSuccess: onConnect, 
-                                invocationContext: this // pass the server as argument to the callback success function
-                            });
-                        }
-                        catch(e)
-                        {
-                            console.warn("Connection to " + this.key() + " failed.");
-                            console.error(e);
-                        }
-                    },
-                    key: function(){ return this.address + ":" + this.ws_port;},
-                    updateConnected: function(){
-                        this.connection.type = 'CONNECTED';
-                        this.lastUpdate = new Date();
-                        let id  = 'server_lastUpdate_' + this.key();
-                        let element = document.getElementById(id);
-                        if(element != null)
-                        {
-                            element.textContent = this.lastUpdate.toLocaleString();
-                            compileNgShow();
-                        }
-                    },
-                    updateDisconnected: function(){
-                        this.connection.type = 'NOT_CONNECTED';
-                        this.lastUpdate = new Date();
-                        let id  = 'server_lastUpdate_' + this.key();
-                        let element = document.getElementById(id);
-                        if(element != null)
-                        {
-                            element.textContent = this.lastUpdate.toLocaleString();
-                            compileNgShow();
-                        }
-                    },
-                    updateConnecting: function(){
-                        this.connection.type = 'CONNECTING';
-                        this.lastUpdate = new Date();
-                        let id  = 'server_lastUpdate_' + this.key();
-                        let element = document.getElementById(id);
-                        if(element != null)
-                        {
-                            element.textContent = this.lastUpdate.toLocaleString();
-                            compileNgShow();
-                        }
-                    }
-                },
+                new Server(
+                    $(loop.index0), 
+                    "$server['address']", 
+                    "$server['port']", 
+                    "$server['ws_port']", 
+                    "$(server['username'] if server['username'] is not None else "null" )", 
+                    "$(server['password'] if server['password'] is not None else "null" )"                    
+                ),                
         ];
 
         var containersList = [
@@ -155,6 +80,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     type: "$item['itemType']", 
                     publish: "$item['publish']",
                     subscribe: "$item['subscribe']",
+                    filterById: $('true' if item['filterById'] else 'false'),
+                    idFilterValue: "$item['idFilterValue']",
                     state: "UNKNOWN",
                     showDeviceCommands: false,
                     // for cameras
@@ -178,16 +105,21 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                         COVER: true,
                         ALARM: true,
                         CAMERA: true,
-                        MOTION: true                        
+                        MOTION: true,
+                        WATERTANK: true             
                     };
 
         var deviceHtmlTemplateCache = [];
 
-        const client = {};
+        //
+        //
+        // MQTT related vars and function
+        //
+        const client = {};  // a dictionary for the Paho client of each mqtt server
 
         function connectToMqtt(server) {
             console.log(server);
-            server.connect(client);
+            server.connect();
         }
 
         function onConnect(connectOptions) {
@@ -235,10 +167,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             // console.log("new message: " + message.topic + message.payloadString, message);
             let server = mqttServers.filter(s => s.key() == (this.host + ":" + this.port))[0];
             server.subscribptions[message.topic].forEach(d => d.update(message.topic, message.payloadString));
-            server.lastUpdate = new Date();
-            let id = "server_lastUpdate_" + server.key()
-            document.getElementById(id).textContent = server.lastUpdate.toLocaleString();
-            console.log("new content of element id:" + id + ", element: ", element);
+            server.updateConnected();
             return;
 
             if(message.payloadString != configuration_str)
@@ -273,12 +202,18 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             {
                 console.log("Configuration unchanged.");
             }
-            // const ul = document.getElementById("messages");
-            // const li = document.createElement("li");
-            // li.appendChild(document.createTextNode(message.payloadString));
-            // ul.appendChild(li);
         }
+    
+        //
+        // end of MQTT related vars and function
+        //
+        //
 
+        //
+        //
+        // add new custom elements here, along with any attributes that must be replaced by context and values
+        // and passed on to the elements inside the correspnding html template
+        //
         const customElementDirectives = [
             {
                 elements: ["server"],
@@ -297,7 +232,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 ]
             },
             {
-                elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto"], 
+                elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto", "watertank"], 
                 attributesToContext: [
                     { attribute: "item", contextProperty: 'i'},
                     { attribute: "filter", contextProperty: 'filter'},
@@ -338,12 +273,10 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             containers = []; // these will be the proxies
             hiddenContainers.forEach(hc => { containers.push(createProxiedContainer(hc)); });
 
-            // populateConfiguration(document.getElementById("content"));      
-            // return;
+            hiddenServers = mqttServers;
+            mqttServers = [];
+            hiddenServers.forEach(s => { mqttServers.push( createProxiedContainer(s) ); });
 
-            // containers = containersList;
-            // document.getElementById('content').innerHTML=
-            // getContentsFromFile('static/elements/container.html').response;
             while(documentContainsNgRepeat() || documentContainsReplaceableCustomElements())
             // for(let i = 0 ; i < 3 ; i++)
             {
@@ -354,33 +287,33 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             }
             // compileNgInit(); see TODO comment inside compileNgInit()
             compileNgId();
+            compileNgTextContent();
             compileNgShow();
             compileUibCollapse();
             compileNgClass();
-            evalValues(null, document.getElementById('content'));
+            evalValues(document.getElementById('content'));
             compileNgClick();
             compileNgDisabled();
             
-            // for reacting to changes in the document
-            const observer = new MutationObserver(() => {
-                // TODO
-            });
-
-            observer.observe(document.getElementById("content"), {
-                attributes: true,
-                childList: true,
-                subtree: true
-            });
-
             proxyContainerRecompileNgClass = true;
             // console.log("full text: ", document.getElementById("content").innerHTML);            
         }
 
         function createProxy(obj) {
+            // no proxy for dates, it does not work
+            if(obj instanceof Date)
+            {
+                throw new Error("Cannot proxy dates. Object " , obj, " must be replaced by a string and date manipulation must be done converting back and forth between Date and string.");
+            }
+
             return new Proxy(obj, {
                 get(target, property, receiver) {
                     const value = Reflect.get(target, property, receiver);
-                    // console.log(`Getting $${property}: `,value);
+                    if(property instanceof Date)
+                    {
+                        console.log("receiver: ", receiver);
+                        console.log(`Getting $${property}: `,value);
+                    }
                     return value;
                 },
                 set(target, property, value, receiver) {
@@ -395,6 +328,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                             compileNgShow();
                             compileNgClass();
                             compileNgDisabled();
+                            compileNgTextContent();
                         }
                     }
                     return success;
@@ -612,6 +546,16 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             });
         }
 
+        function compileNgTextContent() {
+            // replace the textContent of an element with the evaluated expression
+            const elements = document.querySelectorAll('[ng-textContent]');
+            elements.forEach(element => {
+                let expr = element.getAttribute('ng-textContent');
+                // console.log('ng-textContext : ' + expr);
+                element.textContent = evaluateExpression(expr);
+            });
+        }
+        
         function compileNgClick() {
             const elements = document.querySelectorAll('[ng-click]');
             elements.forEach(element => {
@@ -629,7 +573,6 @@ $def with (mqtt_servers, containers, domains, item_types, items)
         function compileNgClass() {
             const elements = document.querySelectorAll('[ng-class]');
             elements.forEach(element => {
-                // const ngClass = element.getAttribute('ng-class').split("'").join("\"").split(":").map(s => s.trim()).join(": \"").split(",").map(s => s.trim()).join("\", ").split("}").map(s => s.trim()).join("\" }");
                 const ngClass = "{" + element.getAttribute('ng-class').slice(1,-1).split(",").map(s => s.split(":").map(s => s.trim())).map(s => {return s[0].split("'").join("\"") + " : \"" + s[1] +"\"";}).join(", ") + "}";
                 try
                 {
@@ -654,7 +597,6 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             });
         }
 
-        // Compile ng-repeat directive
         function compileNgRepeat() {
             const elements = document.querySelectorAll('[ng-repeat]');
             elements.forEach(element => {
@@ -791,7 +733,6 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             return inputString;
         }
 
-        // Evaluate condition expression
         function evaluateCondition(condition) {
             try
             {
@@ -804,7 +745,6 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             }
         }
 
-        // Evaluate expression
         function evaluateExpression(expression) {
             // console.log("eval expression:" + expression);
             try
@@ -813,7 +753,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             }
             catch(e)
             {
-                console.warn("Error at eval expression:" + expression);
+                console.warn("Error at eval expression: " + expression);
                 throw(e);
             }
         }
@@ -892,58 +832,6 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             // return true;
         }
 
-        // evalRepeat will return false if the element was removed in order
-        // to indicate that its children should not be processed any further
-        function evalRepeat(context, element)
-        {
-            let rep = element.getAttribute('ng-repeat');
-            if(rep == null)
-            {
-                return true;
-            }
-            console.log("evalRepeat for ", element)
-            let parts = rep.trim().split(" in ");
-            console.log("parts:", parts);
-            let newContext = {...context};
-            let length = eval(addContextToExpression(context, parts[1]) + ".length");
-            console.log("length: " + addContextToExpression(context, parts[1]) + ".length: " + length);
-            if(length == 0)
-            {
-                element.remove();
-                console.log("Removed ", element, " and returnig from evalRepeat");
-                return false;
-            }
-
-            element.removeAttribute('ng-repeat');
-            for(let i = 0 ; i < length ; i++)
-            {
-                newContext[parts[0]] = eval(addContextToExpression(context, parts[1]) + "[" + i + "]");
-                console.log("evalRepeat newContext: ", newContext);
-                let newElement = element;
-                if(i > 0)
-                {
-                    newElement = element.cloneNode(true);
-                    element.parentNode.appendChild(newElement);
-                }
-                console.log("newElement: ", newElement);
-                console.log("newElement.children: ", newElement.children);
-                Array.from(newElement.children).forEach(c => {
-                    Array.from(c.attributes).forEach(a => {
-                        // replace any occurences of ng-repeat value with the ng-repeat-expr[i]
-                        a.value = replaceWordExceptAfterDot(a.value, parts[0], parts[1] + "[" + i + "]");
-                        // if(a.value == parts[0])
-                        // {
-                        //     a.value = parts[1] + "[" + i + "]";
-                        // }
-                    });
-                });
-                console.log("Will now process newElements from evalRepeat");
-                processElement(newContext, newElement);
-            }
-            // element.parentNode.removeChild(element);
-            return true;
-        }
-
         function replaceWordExceptAfterDot(inputString, wordA, wordB) {
             // Example usage:
             // const inputString = "This is a wordA. Another wordA here. But not .wordA.";
@@ -957,47 +845,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             return inputString.replace(regex, wordB);
         }
 
-        function evalTranslation(element)
-        {
-            let dtr = element.getAttribute("data-translate");
-            if(dtr == null)
-            {
-                return;
-            }
-
-            let parts = dtr.split(".");
-            let tr = JSON.parse(getContentsFromFile('static/i18n/' + language + '/' + parts[0] + '.json').response);
-            // console.log(tr);
-            element.innerHTML = eval("tr." + dtr);
-        }
-
-        function evalClass(context, element)
-        {
-            let cls = element.getAttribute("ng-class");
-            if(cls)
-            {
-                cls = cls.replace(/^(\{+)/, '').replace(/(\}+)$$/, '').split(",").map((c) => c.trim());
-                for(var i = 0 ; i < cls.length ; i++)
-                {
-                    let parts = cls[i].split(':').map((s) => s.trim());
-                    const expr = addContextToExpression(context, parts[1]);
-                    try
-                    {
-                        // console.log("Eval: " + expr + ", with context: ", context);
-                        if(eval(expr))
-                        {
-                            element.className = element.className + " " + parts[0].replace(/^(['"]+)/, '').replace(/(['"]+)$$/, '').trim()
-                        }
-                    }
-                    catch(e)
-                    {
-                        console.error(e);
-                    }
-                }
-            }
-        }
-
-        function evalValues(context, element)
+        function evalValues(element)
         {
             if(element.innerHTML.length == 0)
             {
@@ -1010,17 +858,13 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 return;
             }
 
-            // console.log("Evaluating innerHTML: ", strCopy, " with context: ", context);
+            // console.log("Evaluating innerHTML: ", strCopy);
             element.innerHTML = strCopy.map((s) => {
                 let parts = s.split("}}"); 
                 if(parts.length == 1)
-                    return parts[0]; /*There was a {{ at the beginning of the line*/
+                    return parts[0]; //There was a {{ at the beginning of the line
 
                 const expr = parts[0];
-                if(context != null) 
-                {
-                    expr = addContextToExpression(context, parts[0]);
-                }
                 try
                 {
                     // console.log("Will eval " + expr );
@@ -1037,187 +881,18 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             }).join("");
         }
 
-        function addContextToExpression(context, expr)
+        function evalTranslation(element)
         {
-            const prefix = "context.";
-            const words = Object.keys(context);
-            return addPrefixToWordsInExpression(prefix, words, expr)
-        }
-
-        function addPrefixToWordsInExpression(prefix, words, expr)
-        {
-            const regex = new RegExp(`(?<!\\.)\\b($${words.join('|')})\\b`, 'g');
-            return expr.replace(regex, `$${prefix}$$1`);
-        }
-
-        function evalIf(context, element)
-        {
-            let _if = element.getAttribute("ng-if");
-            if(_if)
-            {
-                try
-                {
-                    const expr = addContextToExpression(context, _if);
-                    // console.log("Eval: " + expr + ", with context: ", context);
-                    // console.log(eval(expr));
-                    if(!eval(expr))
-                    {
-                        // console.log("Processing returns false");
-                        element.style.visibility = "hidden";
-                        // element.replaceWith(document.createElement("span"));
-                        return false;
-                    }
-                }
-                catch(e)
-                {
-                    console.log("Eval of '" + _if + "' of element: ", element, " with context: ", context );
-                    console.error("generated error; ", e);
-                }
-            }
-            return true;
-        }
-
-        function evalAttributesByContext(context, element)
-        {
-            if(!('attributes' in element))
+            let dtr = element.getAttribute("data-translate");
+            if(dtr == null)
             {
                 return;
             }
-            // console.log(element.attributes);
-            // console.log("Before evalAttributesByContext of element ", element, " context: ", context);
-            // evaluate attribute values if the result is a primitive e.g. int
-            // In processTag they will be stored in context and will be most likely used 
-            // in child elements e.g. in items which are children of container
-            Array.from(element.attributes).forEach(a => {
-                let evaluation = evaluateAndCheckPrimitive(addContextToExpression(context, a.value));
-                if(!evaluation.error)// && evaluation.isPrimitive)
-                {
-                    // console.log(a.localName + ".value was " + a.value + " and now is " + evaluation.result);
-                    // a.value = evaluation.result;
-                    context[a.localName] = evaluation.result;
-                    // console.log("context[" + a.localName + "]=("+addContextToExpression(context, a.value)+")" + context[a.localname]);
-                }
-            });
-            // console.log("After evalAttributesByContext context: ", context);
-        }
 
-        function processTag(context, element)
-        {
-            // attributes of #element# will be stored in the context and their value will replaced (before
-            // evaluating) the corresponding 
-            var contextDirectives = [
-                {
-                    element: "container", 
-                    attributesToContext: [
-                        { attribute: "container", contextProperty: 'c'}
-                    ]
-                },
-                {
-                    element: "item", 
-                    attributesToContext: [
-                        { attribute: "item", contextProperty: 'i'}
-                    ]
-                }
-            ];
-            const elementFiles = new Set(['container', 'item']);
-            if(!contextDirectives.map(cd => cd.element).includes(element.localName))
-            {
-                return true;
-            }
-            // evalAttributesByContext(context, element);
-            console.log("processTag for ", element, " with context ", context);
-
-            let text = getContentsFromFile('static/elements/' + element.localName + '.html');
-            if(!text.found)
-            {
-                console.log('No html file found for ' + element.localName + ' in static/elements');
-                return true;
-            }
-
-            // let newContext = {...context};
-            context = {...context};
-            contextDirectives
-                .find(cd => {return cd.element === element.localName;})
-                .attributesToContext.forEach(a2c =>{
-                    // copy computed values of attributes already stored in context with key = attribute.name
-                    // into new (or existing) context keys for use in children of element
-                    context[a2c.contextProperty] = context[a2c.attribute];
-                });
-
-            console.log("newContext: ", context);
-            const template = document.createElement('template');
-            template.innerHTML = text.response;
-            // console.log(template.innerHTML);
-            const result = template.content.children;
-            console.log("result: ", result);
-            // Array.from(template.content.children).forEach(c => {element.parentNode.appendChild(c);});
-            
-            // element = processElement(context, result[0]);
-            // Array.from(result).slice(1).forEach(r => element.parentNode.appendChild(r));
-            // console.log("removing ", element);
-            // element.remove();
-            // // Array.from(result).forEach(r => processElement(context, r));
-            // return true;
-
-            console.log("will append " + (result.length) + " children to parent ", element.parentNode, " of element ", element);
-            for(let i = 0 ; i < result.length ; i++)
-            {
-                // console.log("appending ", result[i], " to ", element.parentNode);
-                // element.parentNode.appendChild(result[i]);
-                let e = processElement(context, result[i]);
-                if(e != null)
-                {
-                    // e.id = c.guid;
-                    console.log("appending ", e, " to ", element.parentNode);
-                    element.parentNode.appendChild(e);
-                }                
-            }
-            console.log("removing ", element);
-            element.remove();
-            // throw new Error('Forced stop');
-            // let pn = element.parentNode;
-            // element.remove();
-            // Array.from(template.content.children).forEach(c => {
-            //     console.log("in place of " + element.localName + " adding ", c);
-            //     // element.parentNode.appendChild(c);
-            // });
-            return false;
-        }
-
-        function processElement(context, element)
-        {
-            const elementFiles = new Set(['container', 'item']);
-            // console.log("Processing element: ", element, ", type: ", typeof element);
-            if(!(element instanceof HTMLElement) || !('getAttribute' in element))
-            {
-                console.log("element is not HTMLElement or does not have 'getAttribute'. Exiting.");
-                return element;
-            }
-
-            if(elementFiles.has(element.localName))
-            {
-                console.log("Processing element: ", element, " with context: ", context);
-            }
-
-            evalAttributesByContext(context, element);
-            if(!evalIf(context, element))   //if true element was remmoved
-            {
-                return null;
-            }
-            let processChildren = true;
-            evalValues(context, element);
-            evalClass(context, element);
-            evalTranslation(element);
-            processChildren = processChildren && evalRepeat(context, element);
-            processChildren = processChildren && processTag(context, element);
-            if(processChildren)
-            {
-                Array.from(element.children).forEach((c) => {
-                    // console.log("Will process ", c ," child of ", element);
-                    processElement(context,c);
-                });
-            }
-            return element;
+            let parts = dtr.split(".");
+            let tr = JSON.parse(getContentsFromFile('static/i18n/' + language + '/' + parts[0] + '.json').response);
+            // console.log(tr);
+            element.innerHTML = eval("tr." + dtr);
         }
 
         function getContentsFromFile(filename)
@@ -1302,7 +977,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                         COVER: true,
                         ALARM: true,
                         CAMERA: true,
-                        MOTION: true                        
+                        MOTION: true,
+                        TANK: true                   
                     }
                 },
                 expandAllChildren: function( expand ) { this.gui.collapsed = expand; for( let c = 0 ; c < this.containers.length ; c++ ) { this.containers[c].expandAllChildren( expand ); } }
@@ -1364,8 +1040,8 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 case 'MODEM':
                     item.device = new Modem( item.publish, item.subscribe, {} );
                     break;
-                case 'SMS':
-                    item.device = new Sms( item.publish, item.subscribe, {} );
+                case 'WATERTANK':
+                    item.device = new Watertank( item.publish, item.subscribe, item.filterById, item.idFilterValue, {} );
                     break;
             }
         }

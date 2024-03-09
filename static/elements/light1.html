@@ -22,7 +22,7 @@
                 <span ng-show="i.device.state.state == 'OFF'">OFF</span>
                 <span ng-show="i.device.state.state == 'UNAVAILABLE' || (i.device.state.state != 'ON' && i.device.state.state != 'OFF')">UNAVAILABLE</span>
             </button>
-            <span class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</span>
+            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
     </div>
     <div ng-show="i.device.showDeviceCommands">    

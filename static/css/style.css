@@ -2,7 +2,7 @@ body {
     font-family: Arial, sans-serif;
 }
 
-h1 {
+.settings h1 {
     text-align: center;
 }
 
@@ -10,7 +10,7 @@ form {
     max-width: fit-content;
 }
 
-.form-group {
+.settings .form-group {
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 10px;
@@ -18,7 +18,7 @@ form {
     align-items: center; /* Align items vertically */
 }
 
-label {
+.settings label {
     display: block;
     text-align: right;
 }
@@ -31,30 +31,39 @@ input[type="password"] {
     box-sizing: border-box;
 }
 
-table {
+.settings.servers table,
+.settings.containers table,
+.settings.items table,
+ {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
 
-th, td {
+.settings.servers th,
+.settings.servers td,
+.settings.containers th,
+.settings.containers td,
+.settings.items th,
+.settings.items td
+{
     padding: 10px;
     text-align: left;
 }
 
-th {
+.settings th {
     background-color: #f2f2f2;
 }
 
-tr:nth-child(even) {
+.settings tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
-tr:hover {
+.settings tr:hover {
     background-color: #f2f2f2;
 }
 
-button {
+.settings button {
     padding: 8px 16px;
     background-color: #4CAF50;
     color: white;
@@ -65,26 +74,26 @@ button {
     margin:2px 2px 2px 0px;
 }
 
-button:hover {
+.settings button:hover {
     background-color: #45a049;
 }
 
-button:disabled,
-button[disabled]{
+.settings button:disabled,
+.settings button[disabled]{
   border: 1px solid #999999;
   background-color: #cccccc;
   color: #666666;
 }
 
-.error {
+.settings .error {
     color: red;
 }
 
-.treeItem {
+.settings .treeItem {
     display: inline;
 }
 
- button.treeItem {
+.settings button.treeItem {
     font-size: small;
     margin: 2px;
     padding: 8px;
@@ -118,10 +127,6 @@ button[disabled]{
     background-color: white;
 }
 
-.container .items{
-    background-color: #eef;
-    padding: 2px;
-}
 
 .device-panel .state.humidity.mdi.mdi-water:before,
 .device-panel .state.temperature.mdi.mdi-thermometer-lines:before{
@@ -129,9 +134,18 @@ button[disabled]{
     top:4px;
 }
 
+.device-panel .device {
+    display: inline-flex;
+    width: 100%
+}
 .containers {
     overflow: auto;
     width: 100%;
+}
+
+.container .items{
+    background-color: #eef;
+    padding: 2px;
 }
 
 .servers {

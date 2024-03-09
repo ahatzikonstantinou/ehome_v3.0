@@ -14,10 +14,10 @@
     <div ng-if="level==1">
         <div class="filters-bar">
             <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.DOOR, 'btn-primary': c.gui.filter.DOOR }" ng-click="c.gui.filter.DOOR = !c.gui.filter.DOOR">
-                <span class="mdi mdi-glassdoor"/>
+                <span class="mdi mdi-door"/>
             </button>
             <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.WINDOW, 'btn-primary': c.gui.filter.WINDOW }" ng-click="c.gui.filter.WINDOW = !c.gui.filter.WINDOW">
-                <span class="mdi mdi-window-open"/>
+                <span class="mdi mdi-window-closed-variant"/>
             </button>
             <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.LIGHT, 'btn-primary': c.gui.filter.LIGHT }" ng-click="c.gui.filter.LIGHT = !c.gui.filter.LIGHT">
                 <span class="mdi mdi-lightbulb"/>
@@ -32,10 +32,13 @@
                 <span class="mdi mdi-shield-home"/>
             </button>
             <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.CAMERA, 'btn-primary': c.gui.filter.CAMERA }" ng-click="c.gui.filter.CAMERA = !c.gui.filter.CAMERA">
-                <span class="mdi mdi-camcorder"/>
+                <span class="mdi mdi-cctv"/>
             </button>        
             <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.MOTION, 'btn-primary': c.gui.filter.MOTION }" ng-click="c.gui.filter.MOTION = !c.gui.filter.MOTION">
-                <span class="mdi mdi-vibrate mdi-camera"/>
+                <span class="mdi mdi-transition"/>
+            </button>        
+            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.TANK, 'btn-primary': c.gui.filter.TANK }" ng-click="c.gui.filter.TANK = !c.gui.filter.TANK">
+                <span class="mdi mdi-storage-tank"/>
             </button>        
 
             <span style="display: inline-block; margin-top:8px;">

@@ -10,11 +10,11 @@
         </div>
         <div class="state-container">
             <div class="state-row">
-                <div class="last-update">{{i.device.lastDetection ? ( i.device.lastUpdate.toLocaleString()) : ''}}</div>
+                <div class="last-update">{{i.device.lastDetection ? i.device.lastUpdateDate : ''}}</div>
                 <div class="state" ng-class="{ 'label-info': i.device.detection == 'NO_MOTION', 'label-danger': i.device.detection == 'MOTION_DETECTED' }" data-translate="{{'home.motion.detection.'+ i.device.detection}}"/>
             </div>
             <div class="state-row">
-                <div class="last-update">{{i.device.lastUpdate ? ( i.device.lastUpdate.toLocaleString()) : ''}}</div>
+                <span class="last-update"ng-textContent="i.device.lastUpdateDate"></span>
                 <div class="state" ng-class="{ 'label-success': i.device.state == 'ACTIVE', 'label-info': i.device.state == 'PAUSED', 'label-danger': i.device.state == 'CAMERA_LOST', 'unavailable': i.device.state == 'UNAVAILABLE' }" data-translate="{{'home.motion.state.'+ i.device.state}}"/>
             </div>
         </div>

@@ -12,7 +12,7 @@
             <span class="state connection not-connected" ng-show="server.connection.type == 'NOT_CONNECTED'">NOT CONNECTED</span>
             <span class="state connection connected" ng-show="server.connection.type == 'CONNECTED'">CONNECTED</span>
             <span class="state connection connecting" ng-show="server.connection.type == 'CONNECTING'">CONNECTING</span>
-            <span ng-id="'server_lastUpdate_' + server.key()" class="last-update">{{server.lastUpdate ? ( server.lastUpdate.toLocaleString()) : ''}}</span>            
+            <span ng-textContent="server.lastUpdateDate" class="last-update"></span>
         </div>
     </div>        
 </div>
