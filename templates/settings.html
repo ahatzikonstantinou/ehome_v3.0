@@ -1,4 +1,4 @@
-$def with (mqtt_servers, containers, domains, item_types, items, showSection)
+$def with (mqtt_servers, containers, domains, item_types, items, serial_ports, rflink, showSection)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -26,9 +26,10 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
     </script>
 </head>
 <body>
-    <button onclick="toggleContent('mqtt_servers', true);toggleContent('containers', false);toggleContent('items', false);">MQTT Servers</button>
-    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', true);toggleContent('items', false);">Containers</button>
-    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', false);toggleContent('items', true);">Items</button>
+    <button onclick="toggleContent('mqtt_servers', true);toggleContent('containers', false);toggleContent('items', false);toggleContent('rflink', false);">MQTT Servers</button>
+    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', true);toggleContent('items', false);toggleContent('rflink', false);">Containers</button>
+    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', false);toggleContent('items', true);toggleContent('rflink', false);">Items</button>
+    <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', false);toggleContent('items', false);toggleContent('rflink', true);">RFLink</button>
 
     <div class="settings servers" id="mqtt_servers" $("hidden" if showSection != "mqtt" else "")>        
         <h1>MQTT Servers</h1>
@@ -482,6 +483,57 @@ $def with (mqtt_servers, containers, domains, item_types, items, showSection)
             }
 
         </script>
+    </div>
+
+    <div class="settings rflink" id="rflink" $("hidden" if showSection != "rflink" else "")>
+        <H4>$("Connected" if rflink["connected"] else "Disconnected")</H4>
+        <p>$rflink["error"]</p>
+        <form id="rfLinkConnectForm" action="/rflink/connect" method="post">
+            <div class="form-group" style="display: flex;align-items: center;">
+                    <label for="serial_port">Serial Port:</label>
+                    <select id="serial_port" name="serial_port" required>
+                    $for s in serial_ports:
+                        <option value="$s.name">$s.name</option>
+                    </select>
+                    <button id="rflinkConnectBtn" type="submit" $("hidden" if rflink["connected"] == True else "")>Connect</button>
+                    <button id="rflinkDisconnectBtn" onclick="disconnect()" $("hidden" if rflink["connected"] == False else "")>Disonnect</button>
+            </div>
+        </form>
+
+            <textarea id="messages" rows="20" style="
+                width: 100%; /* Take all available width */
+                height: calc(1.5em * 20); /* 20 lines of height */
+                resize: vertical; /* Allow vertical resizing */
+                overflow-y: scroll; /* Show vertical scrollbar when needed */
+                box-sizing: border-box; /* Include padding and border in the width */
+                padding: 5px; /* Add padding to the textarea */
+              "></textarea>
+            <button id="clearBtn" onclick="clearTextarea()">Clear Messages</button>
+
+
+            <script>
+                const messages = document.getElementById('messages');
+        
+                const eventSource = new EventSource('/rflink/sse');
+                eventSource.onmessage = function(event) {
+                    messages.value += event.data +"\n";
+                };
+        
+                eventSource.onerror = function(event) {
+                    console.error('EventSource failed:', event);
+                    eventSource.close();
+                };
+
+                function disconnect() {
+                    var form = document.getElementById("rfLinkConnectForm");
+                    form.action = "/rflink/disconnect";
+                    form.submit(); // Submit the form
+                }
+
+                function clearTextarea() {
+                    document.getElementById("messages").value = ""; // Clear textarea
+                }
+            </script>
     </div>
 
     <script>        

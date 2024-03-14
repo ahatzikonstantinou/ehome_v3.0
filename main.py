@@ -5,9 +5,16 @@ import paho.mqtt.client as mqtt
 import uuid
 import time
 import threading
+import serial.tools.list_ports
+from RFLink import RFLink
+import asyncio
+import websockets
+import queue
+import signal
 
 urls = (
     '/', 'Index',
+    '/index', 'Index',
     '/settings', 'Settings',
     '/create/mqtt-server', 'CreateMqttServer',
     '/retrieve/mqtt-server/(\d+)', 'RetrieveMqttServer',
@@ -21,7 +28,10 @@ urls = (
     '/create/item', 'CreateItem',
     '/retrieve/item/(\d+)', 'RetrieveItem',
     '/update/item/(\d+)', 'UpdateItem',
-    '/delete/item/(\d+)', 'DeleteItem'
+    '/delete/item/(\d+)', 'DeleteItem',
+    '/rflink/connect', 'RFLinkConnect',
+    '/rflink/disconnect', 'RFLinkDisonnect',
+    '/rflink/sse', 'SSE'
 )
 
 app = web.application(urls, globals())
@@ -121,7 +131,6 @@ class Messenger:
 
 messenger = Messenger()
 
-
 class Index:
     def GET(self):
         return render.index(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items)
@@ -130,7 +139,7 @@ class Settings:
     def GET(self):
         data = web.input(showSection="mqtt")
         # print("Sending mqtt_servers: {}".format(json.dumps(mqtt_servers, indent=4)))
-        return render.settings(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items, showSection=data.showSection)
+        return render.settings(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items, serial_ports = serial.tools.list_ports.comports(), rflink = { "connected" : rflink.connected, "error" : rflink.connection_error }, showSection=data.showSection)
 
 class CreateMqttServer:
     def POST(self):
@@ -336,6 +345,51 @@ class DeleteItem:
             raise web.seeother('/settings?showSection=items')
         else:
             return json.dumps({"error": "Item not found"})
+        
+class MoveItem:
+    def POST(self, item_id):
+        if item_id > len(items):
+            return
+        data = web.input()
+        print(f"New position for {items[item_id].itemName} is {data.get('order')}")
+        
+
+rflink_data = queue.Queue()
+
+rflink = RFLink()
+    
+class RFLinkConnect:
+    def POST(self):
+        data = web.input()
+        serial_port = data.get("serial_port")
+        print(f"serial port: {serial_port}")
+        rflink.connect(serial_port)
+        raise web.seeother('/settings?showSection=rflink')
+
+class RFLinkDisonnect:
+    def POST(self):
+        data = web.input()
+        rflink.disconnect()
+        raise web.seeother('/settings?showSection=rflink')
+
+class SSE:
+    def GET(self):
+        web.header('Content-Type', 'text/event-stream')
+        web.header('Cache-Control', 'no-cache')
+
+        # i = 0
+        while True:
+            # Read data from the serial port, only when rflink.connected or
+            # this will block the serial port and rflink class will not be able to read it
+            if rflink.connected and rflink.serial and rflink.serial.isOpen():
+                try:
+                    data = rflink.serial.readline().decode('utf-8').strip()
+                    if data:
+                        yield f"data: ---{data}\n\n\n" #3 \n here to display correctly in textarea
+                except Exception as e:
+                    print(f"Error reading from serial port: {e}")
+            
+            time.sleep(0.1) #sleep is necessary in order to not block the app
 
 if __name__ == "__main__":
     app.run()

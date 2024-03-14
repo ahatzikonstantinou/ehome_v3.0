@@ -42,7 +42,7 @@
                                 <span class="percent_str" ng-show="i.device.watertank.enabled && i.device.watertank.state != 'sensor_error'" ng-textContent="i.device.watertank.str_percentage"></span>
                                 <span class="mdi mdi-close-circle-outline disabled" ng-show="!i.device.watertank.enabled"></span>
                                 <span class="sensor_error" ng-show="i.device.watertank.state == 'sensor_error'"></span>
-                                <h4 class="unavailable" ng-show="i.device.watertank.state == 'unavailable'">UNAVAILABLE</h4>
+                                <span class="unavailable" ng-show="i.device.watertank.state == 'unavailable'">UNAVAILABLE</span>
                             </h4>
                         </div>
                   </div>
