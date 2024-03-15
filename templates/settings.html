@@ -1,4 +1,4 @@
-$def with (mqtt_servers, containers, domains, item_types, items, serial_ports, rflink, showSection)
+$def with (mqtt_servers, containers, domains, item_types, items, serial_ports, rflink, rflink_items, rflink_item_index, showSection)
 
 <!DOCTYPE html>
 <html lang="en">
@@ -22,7 +22,34 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         idFilterValue: "$item['idFilterValue']"
                     },
             ];
-            
+
+        var rflink_items = [
+            $for ri in rflink_items:
+            {
+                id: $(loop.index0),
+                mqtt_server: "$ri['mqtt_server']",
+                name: "$ri['name']",
+                mqtt_state_publish_topic: "$ri['mqtt_state_publish_topic']",
+                mqtt_command_subscribe_topic: "$ri['mqtt_command_subscribe_topic']",
+                commands: [
+                    $for c in ri["commands"]:
+                    {
+                        name: "$c['name']",
+                        pulses: "$c['pulses']",
+                    },                
+                ],
+                states: [
+                    $for s in ri["states"]:
+                    {
+                        name: "$s['name']",
+                        pulses_exact: "$s['pulses_exact']",
+                        pulses_shift: "$s['pulses_shift']",
+                        shift_window: "$s['shift_window']",
+                        max_common_substring: "$s['max_common_substring']"
+                    },
+                ]
+            },
+        ];
     </script>
 </head>
 <body>
@@ -486,54 +513,373 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
     </div>
 
     <div class="settings rflink" id="rflink" $("hidden" if showSection != "rflink" else "")>
-        <H4>$("Connected" if rflink["connected"] else "Disconnected")</H4>
-        <p>$rflink["error"]</p>
-        <form id="rfLinkConnectForm" action="/rflink/connect" method="post">
-            <div class="form-group" style="display: flex;align-items: center;">
-                    <label for="serial_port">Serial Port:</label>
-                    <select id="serial_port" name="serial_port" required>
-                    $for s in serial_ports:
-                        <option value="$s.name">$s.name</option>
+        <div>
+            <button onclick="toggleContent('rflink_items', true);toggleContent('rflink_pulses', false)">Items</button>
+            <button onclick="toggleContent('rflink_items', false);toggleContent('rflink_pulses', true)">Pulses</button>
+        </div>
+        <div id="rflink_items">
+            <h4>RFLink Items</h4>            
+            <form id="rflink_item_form" action="/rflink_item/create" method="post">
+                <input type="hidden" value=""/>
+                <div class="form-group">
+                    <label>Name:</label>
+                    <input type="text" id="rflink_item_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="rflink_item_mqtt_server">MQTT Server:</label>
+                    <select id="rflink_item_mqtt_server" name="mqtt_server" required">
+                        $for server in mqtt_servers:
+                            <option value='$(loop.index0)'>$server['address']:$server['port']</option>
                     </select>
-                    <button id="rflinkConnectBtn" type="submit" $("hidden" if rflink["connected"] == True else "")>Connect</button>
-                    <button id="rflinkDisconnectBtn" onclick="disconnect()" $("hidden" if rflink["connected"] == False else "")>Disonnect</button>
+                </div>
+                <div class="form-group">
+                    <label>Mqtt State Publish Topic:</label>
+                    <input type="text" id="rflink_item_mqtt_state_publish_topic" name="mqtt_state_publish_topic">
+                </div>
+                <div class="form-group">
+                    <label>Mqtt Command Subscribe Topic:</label>
+                    <input type="text" id="rflink_item_mqtt_command_subscribe_topic" name="mqtt_command_subscribe_topic">
+                </div>                
+                <button id="createRflinkItemBtn" type="submit">Create Item</button>
+                <button id ="cancelRflinkItemBtn" type="button" hidden onclick="location.reload()">Cancel</button>
+            </form>
+
+            <div id="rflink-items-commands-states" class="commands-states" hidden>
+                <form id="rflink_item_command_form" action="/rflink_item/command/create" method="post">
+                    <div class="form-group">
+                        <label>Commands:</label>
+                        <div class="commands" id="rflink-commands"></div>
+                    </div>
+                    <div class="form-group add">
+                        <input type="text" id="rflink_item_command" name="rflink_item_command" size="20" required>
+                        <button id="rflink-commands-add-btn">Add</button>
+                        <button id="rflink-commands-update-btn" hidden>Update</button>
+                        <button id="rflink-commands-cancel-btn" hidden>Cancel</button>
+                    </div>
+                </form>
+                <form id="rflink_item_state_form" action="/rflink_item/state/create" method="post">
+                    <div class="form-group">
+                        <label>States:</label>
+                        <div class="states" id="rflink-states"></div>
+                    </div>
+                    <div class="form-group add">
+                        <input type="text" id="rflink_item_state" name="rflink_item_state" required>
+                        <button id="rflink-states-add-btn">Add</button>
+                        <button  id="rflink-states-update-btn" hidden>Update</button>
+                        <button id="rflink-states-cancel-btn" hidden>Cancel</button>
+                    </div>
+                </form>
             </div>
-        </form>
-
-            <textarea id="messages" rows="20" style="
-                width: 100%; /* Take all available width */
-                height: calc(1.5em * 20); /* 20 lines of height */
-                resize: vertical; /* Allow vertical resizing */
-                overflow-y: scroll; /* Show vertical scrollbar when needed */
-                box-sizing: border-box; /* Include padding and border in the width */
-                padding: 5px; /* Add padding to the textarea */
-              "></textarea>
-            <button id="clearBtn" onclick="clearTextarea()">Clear Messages</button>
-
-
+            <table id="rflink_item_table">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">MQTT Server</th>
+                        <th onclick="sortTable(1)">Name</th>
+                        <th>Mqtt State Publish Topic</th>
+                        <th>Mqtt Command Subscribe Topic</th>
+                        <th>Commands</th>
+                        <th>States</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    $for item in rflink_items:                        
+                        <tr>
+                            <td>$(mqtt_servers[int(item['mqtt_server'])]['address'] + ":" + mqtt_servers[int(item['mqtt_server'])]['port'])</td>
+                            <td>$item["name"]</td>
+                            <td>${item["mqtt_state_publish_topic"]}</td>
+                            <td>${item["mqtt_command_subscribe_topic"]}</td>
+                            <td>${', '.join([c["name"] for c in item["commands"]])}</td>
+                            <td>${', '.join([s["name"] for s in item["states"]])}</td>
+                            <td>
+                                <button onclick="populateRflinkItemForm(${loop.index0})">Update</button>
+                                <form action="/rflink_item/delete/$(loop.index0)" method="post">
+                                    <button>Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                </tbody>
+            </table>        
+        
             <script>
-                const messages = document.getElementById('messages');
-        
-                const eventSource = new EventSource('/rflink/sse');
-                eventSource.onmessage = function(event) {
-                    messages.value += event.data +"\n";
-                };
-        
-                eventSource.onerror = function(event) {
-                    console.error('EventSource failed:', event);
-                    eventSource.close();
-                };
+                // Select the necessary elements
+                var cancelRflinkItemButton = document.getElementById('cancelRflinkItemBtn');
+                var addCommandsButton = document.getElementById('rflink-commands-add-btn');
+                var addStatesButton = document.getElementById('rflink-states-add-btn');
+                var updateCommandsButton = document.getElementById('rflink-commands-update-btn');
+                var updateStatesButton = document.getElementById('rflink-states-update-btn');
+                var cancelCommandsButton = document.getElementById('rflink-commands-cancel-btn');
+                var cancelStatesButton = document.getElementById('rflink-states-cancel-btn');
+                var inputCommands = document.getElementById('rflink_item_command');
+                var inputStates = document.getElementById('rflink_item_state');
+                var commandsDiv = document.getElementById('rflink-commands');
+                var statesDiv = document.getElementById('rflink-states');
 
-                function disconnect() {
-                    var form = document.getElementById("rfLinkConnectForm");
-                    form.action = "/rflink/disconnect";
-                    form.submit(); // Submit the form
-                }
+                // Function to create a span with "x" button
+                function createSpan(text, type, id, item_id) {
+                    var span = document.createElement('span');
+                    span.textContent = text;
+                    span.setAttribute("data-type", type);
+                    span.setAttribute("data-id", id);
+                    span.setAttribute("data-item_id", item_id);
+                    
+                    var closeButton = document.createElement('button');
+                    closeButton.textContent = "x";
+                    closeButton.className = 'mdi mdi-close close';
+                    closeButton.addEventListener('click', function() {
+                        if(type == 'command')
+                        {
+                            let form = document.getElementById('rflink_item_command_form');
+                            form.action = "/rflink_item/" + item_id + "/command/" + id + "/delete";
+                            form.submit();
+                        }
+                        else if(type == 'state')
+                        {
+                            let form = document.getElementById('rflink_item_state_form');
+                            form.action = "/rflink_item/" + item_id + "/state/" + id + "/delete";
+                            form.submit();
+                        }
+                    });
 
-                function clearTextarea() {
-                    document.getElementById("messages").value = ""; // Clear textarea
+                    span.appendChild(closeButton);
+                    return span;
+                }                
+
+                updateCommandsButton.addEventListener('click', function(){
+                    let form = document.getElementById('rflink_item_command_form');
+                    // console.log("form action: " + form.action);
+                    form.submit();
+                });
+
+                updateStatesButton.addEventListener('click', function(){
+                    let form = document.getElementById('rflink_item_state_form');
+                    // console.log("form action: " + form.action);
+                    form.submit();
+                });
+
+                cancelCommandsButton.addEventListener('click', function(){
+                    inputCommands.value = '';
+                    addCommandsButton.style.display = 'inline-block';
+                    updateCommandsButton.style.display = 'none';
+                    this.style.display = 'none';
+                });
+                
+                cancelStatesButton.addEventListener('click', function(){
+                    inputStates.value = '';
+                    addStatesButton.style.display = 'inline-block';
+                    updateStatesButton.style.display = 'none';
+                    this.style.display = 'none';
+                });
+
+                // Function to handle clicking on a span
+                commandsDiv.addEventListener('click', function(event) {
+                    var target = event.target;
+                    if (target.tagName === 'SPAN') {
+                        inputCommands.value = target.textContent; // Copy the contents of the span into the input
+                        addCommandsButton.style.display = 'none'; // Hide the add button
+                        updateCommandsButton.style.display = 'inline-block'; // Display the update button
+                        cancelCommandsButton.style.display = 'inline-block'; // Display the update button
+                    }
+                });
+
+                statesDiv.addEventListener('click', function(event) {
+                    var target = event.target;
+                    if (target.tagName === 'SPAN') {
+                        inputStates.value = target.textContent.substring(0, target.textContent.length - 1);
+                        addStatesButton.style.display = 'none'; // Hide the add button
+                        updateStatesButton.style.display = 'inline-block'; // Display the update button
+                        cancelStatesButton.style.display = 'inline-block'; // Display the update button
+                        type = target.getAttribute("data-type");
+                        if(type == 'command')
+                        {
+                            let form = document.getElementById('rflink_item_command_form');
+                            form.action = "/rflink_item/" + target.getAttribute("data-item_id") + "/command/" + target.getAttribute("data-id") + "/update";
+                            // console.log("form action: " + form.action);
+                        }
+                        else if(type == 'state')
+                        {
+                            let form = document.getElementById('rflink_item_state_form');
+                            form.action = "/rflink_item/" + target.getAttribute("data-item_id") + "/state/" + target.getAttribute("data-id") + "/update";
+                            // console.log("form action: " + form.action);
+                        }
+                    }
+                });
+
+                function populateRflinkItemForm(index) 
+                {
+                    console.log(index,rflink_items[index]);
+                    var id = index;
+                    document.getElementById("rflink_item_mqtt_server").value = rflink_items[index].mqtt_server;
+                    document.getElementById("rflink_item_name").value = rflink_items[index].name;
+                    document.getElementById("rflink_item_mqtt_state_publish_topic").value = rflink_items[index].mqtt_state_publish_topic;
+                    document.getElementById("rflink_item_mqtt_command_subscribe_topic").value = rflink_items[index].mqtt_command_subscribe_topic;
+                    document.getElementById("rflink_item_form").action = "/rflink_item/update/" + id;
+                    document.getElementById("rflink_item_command_form").action = "/rflink_item/" + id + "/command/create";
+                    document.getElementById("rflink_item_state_form").action = "/rflink_item/" + id + "/state/create";
+                    document.getElementById("createRflinkItemBtn").innerText = "Update Item";
+                    document.getElementById("cancelRflinkItemBtn").hidden = false;
+                    document.getElementById("rflink-items-commands-states").hidden = false;
+                    commandsDiv.innerText = '';
+                    statesDiv.innerText = '';
+                    rflink_items[index].commands.forEach((c,i) => {commandsDiv.appendChild(createSpan(c.name, "command", i, index));});
+                    rflink_items[index].states.forEach((s,i) => {statesDiv.appendChild(createSpan(s.name, "state", i, index));});
+                }      
+        
+                function sortTable(n) {
+                    var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+                    table = document.getElementById("rflink_item_table");
+                    switching = true;
+                    dir = "asc"; 
+                    while (switching) {
+                        switching = false;
+                        rows = table.rows;
+                        for (i = 1; i < (rows.length - 1); i++) {
+                            shouldSwitch = false;
+                            x = rows[i].getElementsByTagName("td")[n];
+                            y = rows[i + 1].getElementsByTagName("td")[n];
+                            if (dir == "asc") {
+                                if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                                    shouldSwitch= true;
+                                    break;
+                                }
+                            } else if (dir == "desc") {
+                                if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                                    shouldSwitch= true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (shouldSwitch) {
+                            rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                            switching = true;
+                            switchcount ++;      
+                        } else {
+                            if (switchcount == 0 && dir == "asc") {
+                                dir = "desc";
+                                switching = true;
+                            }
+                        }
+                    }
                 }
-            </script>
+           
+                cancelRflinkItemButton.addEventListener("click", function() {
+                    // Check if the query string contains rflink_item_index
+                    if (window.location.search.indexOf('rflink_item_index=') !== -1) {
+                        // Parse the existing query string
+                        var queryParams = new URLSearchParams(window.location.search);
+
+                        // Remove the rflink_item_index parameter
+                        queryParams.delete('rflink_item_index');
+
+                        // Construct the new URL with the updated query string
+                        var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + queryParams.toString();
+
+                        // Replace the current URL with the new one
+                        window.history.replaceState({}, document.title, newUrl);
+
+                        // Reload the window
+                        window.location.reload();
+                    }
+                });
+
+                $if rflink_item_index:
+                populateRflinkItemForm($rflink_item_index)
+           </script>
+        </div>
+        <div id="rflink_pulses" hidden>
+            <H4>Pulses ($("Connected" if rflink["connected"] else "Disconnected"))</H4>
+            <p>$rflink["error"]</p>
+            <form id="rfLinkConnectForm" action="/rflink/activate" method="post">
+                <div class="form-group" style="display: flex;align-items: center;">
+                        <label for="serial_port">Serial Port:</label>
+                        <select id="serial_port" name="serial_port" required>
+                        $for s in serial_ports:
+                            <option value="$s.name">$s.name</option>
+                        </select>
+                        <label for="activateRFLink">Activate</label>
+                        <input type="checkbox" id="activateRFLink" ${"checked" if rflink["connected"] else ""}>                    
+                </div>
+            </form>
+
+            <div class="messages">
+                <textarea id="rflink_messages" rows="10" style="
+                    width: 100%; /* Take all available width */
+                    height: calc(1.5em * 10); /* 10 lines of height */
+                    resize: vertical; /* Allow vertical resizing */
+                    overflow-y: scroll; /* Show vertical scrollbar when needed */
+                    box-sizing: border-box; /* Include padding and border in the width */
+                    padding: 5px; /* Add padding to the textarea */
+                "></textarea>
+                <div class="buttons">
+                    <button id="rflinkConnectBtn" onclick="connectRFLink()" $("disabled" if not rflink["connected"] else "")>Connect</button>
+                    <button id="rflinkDisconnectBtn" onclick="disconnectRFLink()" style="display:none;">Disonnect</button>
+                    <button id="rflinkClearBtn" onclick="clearRFLinkTextarea()">Clear Messages</button>
+                </div>
+            </div>
+            <div class="processing">
+                <select id="rflink_item" name="rflink_item" required>
+                    $for ri in rflink_items:
+                        $for s in ri["states"]:
+                            <option value="$ri['id'], $(loop.index0)">$(ri["name"])&nbsp;-&nbsp;$(s["name"])</option>
+                </select>
+                <input type="number" min="0" name="pulse_middle" id="pulse_middle">
+            </div>
+
+                <script>
+                    const rflink_messages = document.getElementById('rflink_messages');
+                    var sse_connected = false;
+                    var eventSource = new EventSource('/rflink/sse');
+                    // Event listener for successful connection
+                    eventSource.onopen = function() {
+                        console.log("Connection established.");
+                    };
+
+                    // Event listener for closing the connection
+                    eventSource.onclose = function() {
+                        console.log("Connection closed.");
+                    };
+
+                    eventSource.onmessage = function(event) {
+                        if(sse_connected)
+                        {
+                            rflink_messages.value += event.data +"\n";
+                        }
+                    };
+            
+                    eventSource.onerror = function(event) {
+                        console.error('EventSource failed:', event);
+                        eventSource.close();
+                    };
+
+                    document.getElementById("activateRFLink").addEventListener("click", 
+                    function activateRFLink()
+                    {
+                        var form = document.getElementById("rfLinkConnectForm");
+                        form.action = document.getElementById("activateRFLink").checked ? "/rflink/activate" : "/rflink/deactivate";
+                        form.submit(); // Submit the form
+                    });
+
+                    function connectRFLink() {
+                        sse_connected = true;
+                        // Hide Connect button
+                        document.getElementById("rflinkConnectBtn").style.display = "none";
+                        // Show Disconnect button
+                        document.getElementById("rflinkDisconnectBtn").style.display = "inline-block";
+                    }
+
+                    function disconnectRFLink() {
+                        sse_connected = false;
+                        // Hide Disconnect button
+                        document.getElementById("rflinkDisconnectBtn").style.display = "none";
+                        // Show Connect button
+                        document.getElementById("rflinkConnectBtn").style.display = "inline-block";
+                    }
+
+                    function clearRFLinkTextarea() {
+                        document.getElementById("rflink_messages").value = ""; // Clear textarea
+                    }
+                </script>
+        </div>
     </div>
 
     <script>        

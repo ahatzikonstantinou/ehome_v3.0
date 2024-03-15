@@ -2,18 +2,19 @@ import serial
 import time
 import re
 import asyncio
-import websockets
 import threading
 
 class RFLink:
     CONNECTED_PATTERN = "Nodo RadioFrequencyLink - RFLink Gateway"
     DEBUG_CMD = "10;rfdebug=on;\r\n"
     DEBUG_OK_REPLY = "RFDEBUG=ON;"
-    def __init__(self):
+    def __init__(self, rflink_settings):
         self.connected = False
         self.connection_error = ""
         self.serial_port = None
         self.serial = None
+        if rflink_settings["activated"]:
+            self.connect(rflink_settings["serial_port"])
     
     def read_and_send(self):
         # Create an event loop
@@ -73,7 +74,7 @@ class RFLink:
                 self.connection_error = "No particular error reported"
                 return False
         except serial.SerialException as e:
-            print(f"Failed to connect to serial port {port}: {e}")
+            print(f"Failed to connect to serial port {serial_port}: {e}")
             self.connected = False
             self.connection_error = e
             return False
@@ -268,27 +269,27 @@ class RFLink:
         "540,1590,450,1590,1560,480,1560,480,1560,480,450,1590,1560,510,1560,480,480,1590,480,1590,450,1590,450,1590,450,1590,1560,480,480,1590,1560,510,1560,510,1560,480,1560,480,1560,480,1560,480,450,1590,450,1560,450,4350,450,1590,480,1590,480,1590,1560,480,1560,480,1560,480,480,1560,1560,510,1560,510,450,1590,450,1590,450,1590,480,1590,480,1590,1560,480,450,1590,1560,510,1560,480,1560,480,1560,510,1560,480,1560,480,480,1590,480,1560,480,4350,480,1590,450,1590,450,1590,1560,480,1560,480,1560,480,480,1590,1560,510,1560,510,450,1590,480,1590,480,1590,450,1590,450,1590,1560,480,480,1590,1560,510,1560,510,1560,510,1560,480,1560,480,1560,480,450,1590,450,1560,450,4350,450,1590,450,1590,450,1590,1560,480,1560,480,1560,480,450,1590,1560,510,1560,510,480,1590,450,1590,450,1590,450,1590,450,1590,1560,480,450,1590,1560,510,1560,510,1560,480,1560,480,1560,510,1560,480,450,1590,450,1560,450,4350,450,1590,480,1590,450,1590,1560,480,1560,480,1560,480,480,1590,1560,510,1560,510,450,1590,450,1590,480,1590,480,1590,450,1590,1560,480,450,1590,1560,480,1560,480,1560,510,1560,480,1560,480,1560,480,480,1560,480,1560,450,4350,450,1590,450,1590,450,1590,1560,480,1560,480,1560,480,450,1590,1560,510,1560,510,480,1590,480,1590,450,1590,450,1590,450,1590,1560,480,480,1590,1560,510,1560,510,1560,480,1560,480,1560,480,1560,480,450,1590,450,1560,450,4350,450,1590,480,1590,480,1590,1560,480,1560,480,1560,480,480,1590,1560,510,1560,510,450,1590,450,1590,450,1590,480,1590,480,1590,1560,480,450,1590,1560,510,1560,480,1560,480,1560,480,1560,480,1560,480,480,1560,480,1560,480,4350,480,1590,450,1590,450,1590,1560,480,1560,480,1560,480,480,1560,1560,510,1560,510,450,1590,480,1590,480,1590,450,1590,450,1590,1560,480,480,1590,1560,480,1560,510,1560,510,1560,480,1560,480,1560,480,480,1590,450,1560,450,4350,450,1590,450,1590,480,1590,1560,480,1560,480,1560,480,450,1590,1560,510,1560,480,480,1590,450,1590,450,1590,450,1590,480,1560,1560,480,450,1590,1560,510,1560,480,1560,480,1560,480,1560,480,1560,480,450,1560,480,1560,480,4350,480,1590,480,1590,480,1590,1560,480,1560,480,1560,480,480,1560,1560,510,1560,510,450,1590,450,1590,480,1590,480,1590,450,1590,1560,480,450,1590,1560,480,1560,480,1560,510,1560,480,1560,480,1560,480,480,1590,480,1560,450,4350,480,1590,450,1590,450,1590,1560,480,1560,480,1560,480,450"
     ]
 
-if __name__ == "__main__":
-    port = "COM6"  # Change this to your serial port
-    baudrate = 57600  # Change this to match your device's baud rate
-    RAWSIGNAL_SAMPLE_RATE = 30
-    PULSECOUNT = 50
-    PULSEMID = 1000 #700 / RAWSIGNAL_SAMPLE_RATE
-    PULSEMAX = 2000 / RAWSIGNAL_SAMPLE_RATE
-    PULSEMIN = 150 / RAWSIGNAL_SAMPLE_RATE
-    monitor_serial(port, baudrate, PULSEMID, PULSEMAX, PULSEMIN)
-    i = 0
-    binary_data = convert_pulses_to_binary(test_data[0].split(","), PULSEMID, PULSEMAX, PULSEMIN)
+# if __name__ == "__main__":
+#     port = "COM6"  # Change this to your serial port
+#     baudrate = 57600  # Change this to match your device's baud rate
+#     RAWSIGNAL_SAMPLE_RATE = 30
+#     PULSECOUNT = 50
+#     PULSEMID = 1000 #700 / RAWSIGNAL_SAMPLE_RATE
+#     PULSEMAX = 2000 / RAWSIGNAL_SAMPLE_RATE
+#     PULSEMIN = 150 / RAWSIGNAL_SAMPLE_RATE
+#     monitor_serial(port, baudrate, PULSEMID, PULSEMAX, PULSEMIN)
+#     i = 0
+#     binary_data = convert_pulses_to_binary(test_data[0].split(","), PULSEMID, PULSEMAX, PULSEMIN)
 
-    known_binary_values = convert_pulses_to_binary(str_data[13].split(","), PULSEMID, PULSEMAX, PULSEMIN)
-    compareAndShift(binary_data, known_binary_values, 48)
-    exit
-    # for s in str_data:
-    #     print(f"Doing {i} with len:{len(s)}")
-    #     i+=1
-    #     # convert_text_to_binary(s, PULSEMID, PULSEMAX, PULSEMIN)
-    #     known_binary_values = convert_pulses_to_binary(s.split(","), PULSEMID, PULSEMAX, PULSEMIN)
-    #     compareAndShift(binary_data, known_binary_values, 48)
-    #     # break
+#     known_binary_values = convert_pulses_to_binary(str_data[13].split(","), PULSEMID, PULSEMAX, PULSEMIN)
+#     compareAndShift(binary_data, known_binary_values, 48)
+#     exit
+#     # for s in str_data:
+#     #     print(f"Doing {i} with len:{len(s)}")
+#     #     i+=1
+#     #     # convert_text_to_binary(s, PULSEMID, PULSEMAX, PULSEMIN)
+#     #     known_binary_values = convert_pulses_to_binary(s.split(","), PULSEMID, PULSEMAX, PULSEMIN)
+#     #     compareAndShift(binary_data, known_binary_values, 48)
+#     #     # break
         
 

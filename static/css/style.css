@@ -151,3 +151,61 @@ input[type="password"] {
 .servers {
     background-color: #fff;    
 }
+
+.settings.rflink .messages .buttons {
+    overflow: hidden;
+}
+
+#rflinkClearBtn{
+    float: right;
+}
+
+.rflink .commands-states form {
+    display: contents;
+}
+
+.rflink .commands-states .add input {
+    width: auto;
+}
+
+.rflink .commands,
+.rflink .states{
+    border: 1px solid;
+    min-height: 2em;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-width: 1px;
+}
+
+.rflink .commands span,
+.rflink .states span{
+    display: inline-block;
+    border: 1px solid lightgray;
+    border-radius: 4px;
+    padding-left: 2px;
+    margin: 2px;
+    cursor: pointer;
+    border-width: 2px;
+    border-style: solid;
+    border-color: -internal-light-dark(rgb(118, 118, 118), rgb(133, 133, 133));
+    border-image: initial;
+}
+
+.rflink .commands span button.close,
+.rflink .states span button.close{
+    padding: 6px 10px;
+    margin-left: 4px;
+    margin-bottom: 4px;
+    vertical-align: middle;
+    font-size: 10px;
+    font-weight: bold;    
+}
+
+.rflink .commands-states .form-group.add{
+    justify-content: flex-end;
+    display: flex;
+    align-items: center;
+}
+
