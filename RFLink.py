@@ -4,15 +4,20 @@ import re
 import asyncio
 import threading
 
+import json #for deubugging
+
+
 class RFLink:
     CONNECTED_PATTERN = "Nodo RadioFrequencyLink - RFLink Gateway"
     DEBUG_CMD = "10;rfdebug=on;\r\n"
     DEBUG_OK_REPLY = "RFDEBUG=ON;"
+    RAW_PULSE_PATTERN = ";Pulses(uSec)="
     def __init__(self, rflink_settings):
         self.connected = False
         self.connection_error = ""
         self.serial_port = None
         self.serial = None
+        self.rflink_settings = rflink_settings
         if rflink_settings["activated"]:
             self.connect(rflink_settings["serial_port"])
     
@@ -38,16 +43,17 @@ class RFLink:
             return
         print(received_data)
         
-        command = self.DEBUG_CMD
-        self.serial.write(command.encode())
-        print("Initial command sent:", command.strip())
-        time.sleep(1)  # Delay for 1 second after sending the command
-        received_data = self.read_until_pattern_or_timeout(self.DEBUG_OK_REPLY, timeout)
-        if received_data is None:
-            print("Timeout occurred. Could not find desired pattern.")
-            self.connected = False
-            return
-        print(received_data)
+        if self.rflink_settings["debug"]:
+            command = self.DEBUG_CMD
+            self.serial.write(command.encode())
+            print("Initial command sent:", command.strip())
+            time.sleep(1)  # Delay for 1 second after sending the command
+            received_data = self.read_until_pattern_or_timeout(self.DEBUG_OK_REPLY, timeout)
+            if received_data is None:
+                print("Timeout occurred. Could not find desired pattern.")
+                self.connected = False
+                return
+            print(received_data)
         self.connected = True
 
     def read_until_pattern_or_timeout(self, pattern, timeout):
@@ -85,6 +91,14 @@ class RFLink:
             self.serial.close()
             self.connected = False
 
+    def processRawPulseLine(self, pulseMiddle, line):
+        if RFLink.RAW_PULSE_PATTERN not in line:
+            return line
+        
+        pulses = RFLink.convert_text_to_binary(line, pulseMiddle, None, None)
+        return ''.join([str(p) for p in pulses])
+
+    @staticmethod
     def convert_pulses_to_binary(pulse_data, pulse_mid, pulse_max, pulse_min):
         binary_values = []
         mx = None
@@ -132,6 +146,7 @@ class RFLink:
         # print(f"Max: {mx}, Min: {mn}, binary_values: {binary_values}")
         return binary_values
 
+    @staticmethod
     def extract_pulse_data(text):
         match = re.search(r'Pulses\(uSec\)=([^;]+);', text)
         if match:
@@ -139,20 +154,101 @@ class RFLink:
         else:
             return None
 
-    def convert_text_to_binary(text, pulse_mid, pulse_max, pulse_min):
-        pulse_data = extract_pulse_data(text)
+    @staticmethod
+    def convert_text_to_binary(text, pulse_mid, pulse_max=None, pulse_min=None):
+        pulse_data = RFLink.extract_pulse_data(text)
         # print(f"pulse_data: {pulse_data}")
         if pulse_data is not None:        
             pulse_data_array = pulse_data.split(",")
             # print(f"Got {len(pulse_data_array)} pulses")
             try:
-                binary_values = convert_pulses_to_binary(pulse_data_array, pulse_mid, pulse_max, pulse_min)
+                binary_values = RFLink.convert_pulses_to_binary(pulse_data_array, pulse_mid, pulse_max, pulse_min)
                 # print("Binary values:", binary_values)
                 return binary_values
             except ValueError as e:
                 print("Error:", e)
         else:
             print("Pattern not found or invalid data.")
+
+    @staticmethod
+    def getMaxCommonSubstring(lines):
+        if not lines:
+            return ""
+
+        # Find the shortest string in the list
+        shortest = min(lines, key=len)
+
+        # Function to find the longest common substring between two strings
+        def find_longest_common_substring(s1, s2):
+            matrix = [[0] * (len(s2) + 1) for _ in range(len(s1) + 1)]
+            max_length = 0
+            end_index = 0
+
+            for i in range(1, len(s1) + 1):
+                for j in range(1, len(s2) + 1):
+                    if s1[i - 1] == s2[j - 1]:
+                        matrix[i][j] = matrix[i - 1][j - 1] + 1
+                        if matrix[i][j] > max_length:
+                            max_length = matrix[i][j]
+                            end_index = i
+                    else:
+                        matrix[i][j] = 0
+
+            return s1[end_index - max_length: end_index]
+
+        # Find the longest common substring among all pairs of lines
+        common_substring = shortest
+        for string in lines:
+            if string == shortest:
+                continue
+            common_substring = find_longest_common_substring(common_substring, string)
+
+        return common_substring
+    
+    @staticmethod
+    def detect(line, rflink_items):
+        # in results each items has "commands": [], "states": []
+        # a command is the command's name, pulse sequence
+        # a state is the state's name, exact/max common substring/shift window, pulse sequence
+        results = {}
+        # print(f"Doing rflink_items:{json.dumps(rflink_items, indent=4)}")
+        for i, t in enumerate(rflink_items):
+            print(f"Doing item:{i}")
+            # start with dommands
+            for c in t['commands']:
+                data = line                
+                if RFLink.RAW_PULSE_PATTERN in line:
+                    data = RFLink.convert_text_to_binary(line, c['pulse_middle'])
+                for e in c['pulses_exact']:
+                    if e == data:
+                        if i not in results:
+                            results[i] = {"name": t['name'], "commands": [], "states": []}
+                        results[i]['commands'].append({"name": c['name'], "pulses": e})
+            # try states
+            for s in t['states']:
+                print(f"Doing state {s['name']}")
+                data = line                
+                if RFLink.RAW_PULSE_PATTERN in line:
+                    data = ''.join(str(bit) for bit in RFLink.convert_text_to_binary(line, s['pulse_middle']))
+                    print(f"converted line to: {data}")
+                for e in s['pulses_exact']:
+                    if e == data:
+                        if i not in results:
+                            results[i] = {"name": t['name'], "commands": [], "states": []}
+                        results[i]['states'].append({"name": s["name"], "type": "exact", "pulses": e})
+                if s['max_common_substring'] and s['max_common_substring'] in data:
+                    if i not in results:
+                        results[i] = {"name": t['name'], "commands": [], "states": []}
+                    results[i]['states'].append({"name": s["name"], "type": "max_common_substring", "pulses": s['max_common_substring']})
+                for e in s['pulses_shift']:
+                    if RFLink.compareAndShift(data, e, s['shift_window_size']):
+                        if i not in results:
+                            results[i] = {"name": t['name'], "commands": [], "states": []}
+                        print(f"Appending to states of item {i}")
+                        results[i]['states'].append({"name": s["name"], "type": "shift", "pulses": e})                    
+        print(f"Results:{json.dumps(results, indent=4)}")        
+        return results
+
 
     def compare(data1, data2):
         # print(f"Comparing data1: {data1}")
@@ -166,6 +262,7 @@ class RFLink:
             
         return True
 
+    @staticmethod
     def compareAndShift(data1, data2, size):
         """
         Compare array data1 against array data2. If data2 is shorter than data1 return False.

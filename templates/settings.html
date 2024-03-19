@@ -42,10 +42,20 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     $for s in ri["states"]:
                     {
                         name: "$s['name']",
-                        pulses_exact: "$s['pulses_exact']",
-                        pulses_shift: "$s['pulses_shift']",
-                        shift_window: "$s['shift_window']",
-                        max_common_substring: "$s['max_common_substring']"
+                        pulses_exact: [
+                            $for e in s['pulses_exact']:
+                                "$e",
+                        ],
+                        pulses_shift:  [
+                            $for ps in s['pulses_shift']:
+                                "$ps",
+                        ],
+                        shift_window_size: "$s['shift_window_size']",
+                        max_common_substring: "$s['max_common_substring']",
+                        use_exact_pulse: "$s['use_exact_pulse']",
+                        use_shift_window: "$s['use_shift_window']",
+                        use_max_common_substring: "$s['use_max_common_substring']",
+                        pulse_middle: "$s['pulse_middle']"
                     },
                 ]
             },
@@ -512,15 +522,14 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
         </script>
     </div>
 
-    <div class="settings rflink" id="rflink" $("hidden" if showSection != "rflink" else "")>
+    <div class="settings rflink" id="rflink" $("hidden" if not showSection.startswith("rflink") else "")>
         <div>
             <button onclick="toggleContent('rflink_items', true);toggleContent('rflink_pulses', false)">Items</button>
             <button onclick="toggleContent('rflink_items', false);toggleContent('rflink_pulses', true)">Pulses</button>
         </div>
-        <div id="rflink_items">
+        <div id="rflink_items" $("hidden" if not showSection.endswith("item") else "")>
             <h4>RFLink Items</h4>            
             <form id="rflink_item_form" action="/rflink_item/create" method="post">
-                <input type="hidden" value=""/>
                 <div class="form-group">
                     <label>Name:</label>
                     <input type="text" id="rflink_item_name" name="name" required>
@@ -786,7 +795,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                 populateRflinkItemForm($rflink_item_index)
            </script>
         </div>
-        <div id="rflink_pulses" hidden>
+        <div id="rflink_pulses" $("hidden" if not showSection.endswith("pulses") and showSection != "rflink" else "")>
             <H4>Pulses ($("Connected" if rflink["connected"] else "Disconnected"))</H4>
             <p>$rflink["error"]</p>
             <form id="rfLinkConnectForm" action="/rflink/activate" method="post">
@@ -798,6 +807,8 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         </select>
                         <label for="activateRFLink">Activate</label>
                         <input type="checkbox" id="activateRFLink" ${"checked" if rflink["connected"] else ""}>                    
+                        <label for="debugRFLink">Debug</label>
+                        <input type="checkbox" id="debugRFLink" ${"checked" if rflink["debug"] else ""}>                    
                 </div>
             </form>
 
@@ -810,23 +821,519 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     box-sizing: border-box; /* Include padding and border in the width */
                     padding: 5px; /* Add padding to the textarea */
                 "></textarea>
+                <div id="modalTestResults" class="modal">
+                    <!-- Modal content -->
+                    <div class="modal-content">
+                    <span><strong>Test Results</strong></span>
+                    <span class="close">&times;</span>
+                      <textarea id="rflink_test_results" style="
+                        width: 100%; /* Take all available width */
+                        height: calc(1.5em * 10); /* 10 lines of height */
+                        resize: vertical; /* Allow vertical resizing */
+                        overflow-y: scroll; /* Show vertical scrollbar when needed */
+                        box-sizing: border-box; /* Include padding and border in the width */
+                        padding: 5px; /* Add padding to the textarea */
+                    "></textarea>
+                    </div>
+                  
+                  </div>
                 <div class="buttons">
                     <button id="rflinkConnectBtn" onclick="connectRFLink()" $("disabled" if not rflink["connected"] else "")>Connect</button>
                     <button id="rflinkDisconnectBtn" onclick="disconnectRFLink()" style="display:none;">Disonnect</button>
+                    <button id="rflinkTestBtn" onclick="testRFLink()">Test</button>
                     <button id="rflinkClearBtn" onclick="clearRFLinkTextarea()">Clear Messages</button>
                 </div>
             </div>
             <div class="processing">
-                <select id="rflink_item" name="rflink_item" required>
-                    $for ri in rflink_items:
-                        $for s in ri["states"]:
-                            <option value="$ri['id'], $(loop.index0)">$(ri["name"])&nbsp;-&nbsp;$(s["name"])</option>
-                </select>
-                <input type="number" min="0" name="pulse_middle" id="pulse_middle">
+                <!-- <form id="rflink-item-state-form" action="rflink/state/add" method="post"> -->
+                    <hr>
+                    <div class="controls">
+                        <label for="rflink_item_state_select">States:</label>
+                        <select id="rflink_item_state_select" name="rflink_item" required>
+                            $for ri in rflink_items:
+                                $ i = loop.index0
+                                $for s in ri["states"]:
+                                    <option value="$i, $(loop.index0)">$(ri["name"])&nbsp;-&nbsp;$(s["name"])</option>
+                        </select>
+                    </div>
+                    <div class="controls">
+                        <label for="rflink_pulse_middle">Pulse middle:</label>
+                        <input type="number" min="0" name="pulse_middle" id="rflink_pulse_middle">
+                    </div>
+                    <button id="rflink_pulse_add_exact_btn" onclick="rflinkAddExactPulse()">Add Exact</button>
+                    <button id="rflink_pulse_add_shift_btn" onclick="rflinkAddShiftPulse()">Add Shift</button>
+                <!-- </form> -->
+                <h4>
+                    <input type="checkbox" id="rflink-item-state-use-exact-pulse">
+                    Exact Comparison Pulse Sequences
+                </h4>
+                <table id="rflink-item-state-exact-pulse">
+                    <thead>
+                        <th>Count</th>
+                        <th>Sequence</th>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <h4>Shift Comparison Pulse Sequences</h4>
+                <table id="rflink-item-state-shift-pulse">
+                    <thead>
+                        <th>Count</th>
+                        <th>Sequence</th>
+                        <th></th>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <h4><input type="checkbox" id="rflink_item_use_shift_window">Shift window
+                    <div class="controls">
+                        <label for="rflink_shift_window_size">size:</label>
+                        <input type="number" min="1" id="rflink_shift_window_size" name="rflink_shift_window_size" required value="0">                    
+                    </div>
+                </h4>
+                <h4><input type="checkbox" id="use_rflink_max_common_substring">Max common substring
+                    <textarea id="rflink_max_common_substring" name="rflink_max_common_substring"  readonly></textarea>
+                </h4>
             </div>
-
                 <script>
                     const rflink_messages = document.getElementById('rflink_messages');
+                    const rflinkItemSelect = document.getElementById('rflink_item_state_select');
+                    const rflinkItemStateExactPulseTableBody = document.querySelector('#rflink-item-state-exact-pulse tbody');
+                    const rflinkItemStateShiftPulseTableBody = document.querySelector('#rflink-item-state-shift-pulse tbody');
+                    const rflinkExactPulseCheckbox = document.getElementById("rflink-item-state-use-exact-pulse");
+                    const rflinkShiftWindowCheckbox = document.getElementById("rflink_item_use_shift_window");
+                    const rflinkShiftWindowSizeTextbox = document.getElementById("rflink_shift_window_size");
+                    const rflinkMaxCommonSubstringCheckbox = document.getElementById("use_rflink_max_common_substring");
+                    const rflinkMaxCommonSubstringTextbox = document.getElementById("rflink_max_common_substring");
+                    const pulseMiddleTextbox = document.getElementById("rflink_pulse_middle");
+                    const modalTestResultsDiv = document.getElementById("modalTestResults");
+                    const testResultsTextarea = document.getElementById("rflink_test_results");
+                    const modalTestResultsCloseSpan = document.querySelector("#modalTestResults span.close"); 
+
+                    modalTestResultsCloseSpan.onclick = function(){
+                        modalTestResultsDiv.style.display = "none";
+                    }
+
+                    // When the user clicks anywhere outside of the modal, close it
+                    window.onclick = function(event) {
+                        if (event.target == modalTestResultsDiv) {
+                            modalTestResultsDiv.style.display = "none";
+                        }
+                    }
+
+                    function testRFLink()
+                    {
+                        const data = document.getElementById("rflink_messages").value;
+                        if(data.trim().length == 0)
+                        {
+                            return;
+                        }
+
+                        // Make an HTTP GET request using fetch
+                        fetch('/rflink_item/test', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            },
+                            body: JSON.stringify({ data: data }) // Convert the data to JSON format
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            // Parse the JSON response
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Handle the JSON data
+                            console.log(data);
+                            modalTestResultsDiv.style.display = "block";
+                            testResultsTextarea.value = JSON.stringify(data, null, 2);
+                        })
+                        .catch(error => {
+                            // Handle errors
+                            console.error('There was a problem with the fetch operation:', error);
+                        });
+                    }
+
+                    function getItemIdStateId()
+                    {
+                        let item_state = document.getElementById("rflink_item_state_select").value;
+                        if(item_state == null || item_state == undefined || item_state.length == 0)
+                        {
+                            alert("Select an item command/state.");
+                            throw "Select an item command/state.";
+                        }
+
+                        var [item_id, state_id] = item_state.split(",");
+                        return {item_id: Number(item_id), state_id: Number(state_id)};
+                    }
+
+                    pulseMiddleTextbox.onchange = function()
+                    {
+                        const pulseMiddle = Number(pulseMiddleTextbox.value);
+                        let itemIdStateId = getItemIdStateId();
+
+                        fetch('/rflink_item/' + itemIdStateId.item_id + '/state/' + itemIdStateId.state_id + '/pulse-middle', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            },
+                            body: JSON.stringify({pulseMiddle: pulseMiddle})
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                    }
+
+                    rflinkShiftWindowSizeTextbox.onchange = function()
+                    {
+                        const windowSize = Number(rflinkShiftWindowSizeTextbox.value);
+                        let itemIdStateId = getItemIdStateId();
+
+                        fetch('/rflink_item/' + itemIdStateId.item_id + '/state/' + itemIdStateId.state_id + '/shift-window-size/' + windowSize, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            }
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            rflink_items[itemIdStateId.item_id].states[itemIdStateId.state_id].shift_window_size = windowSize;
+                            return response.json();
+                        })
+                    }
+
+                    rflinkExactPulseCheckbox.onchange = function()
+                    {
+                        const use = rflinkExactPulseCheckbox.checked ? 1 : 0;
+                        let itemIdStateId = getItemIdStateId();
+
+                        fetch('/rflink_item/' + itemIdStateId.item_id + '/state/' + itemIdStateId.state_id + '/use-exact-pulse/' + use, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            }
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            rflink_items[itemIdStateId.item_id].states[itemIdStateId.state_id].use_exact_pulse = use;
+                            return response.json();
+                        })
+                    }
+
+                    rflinkShiftWindowCheckbox.onchange = function()
+                    {
+                        const use = rflinkShiftWindowCheckbox.checked ? 1 : 0;
+                        let itemIdStateId = getItemIdStateId();
+
+                        fetch('/rflink_item/' + itemIdStateId.item_id + '/state/' + itemIdStateId.state_id + '/use-shift-window/' + use, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            }
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            rflink_items[itemIdStateId.item_id].states[itemIdStateId.state_id].use_shift_window = use;
+                            return response.json();
+                        })
+                    }
+
+                    rflinkMaxCommonSubstringCheckbox.onchange = function()
+                    {
+                        const use = rflinkMaxCommonSubstringCheckbox.checked ? 1 : 0;
+                        let itemIdStateId = getItemIdStateId();
+
+                        fetch('/rflink_item/' + itemIdStateId.item_id + '/state/' + itemIdStateId.state_id + '/use-max-common-substring/' + use, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            }
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            rflink_items[itemIdStateId.item_id].states[itemIdStateId.state_id].use_max_common_substring = use;
+                            return response.json();
+                        })
+                    }
+
+                    function rflinkDeleteExactPulse(item_id, state_id, pulse_sequence_id){
+                        // Make an HTTP GET request using fetch
+                        fetch('/rflink_item/' + Number(item_id) + '/state/' + Number(state_id) + '/delete-exact/'+pulse_sequence_id, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            }
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            // Parse the JSON response
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Handle the JSON data
+                            // console.log(data);
+                            console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_exact", rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact);
+                            rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact = data;
+                            populatePulsesExactTable(item_id + "," + state_id);
+                        })
+                        .catch(error => {
+                            // Handle errors
+                            console.error('There was a problem with the fetch operation:', error);
+                        });
+                    }
+
+                    function rflinkDeleteShiftPulse(item_id, state_id, pulse_sequence_id){
+                        // Make an HTTP GET request using fetch
+                        fetch('/rflink_item/' + Number(item_id) + '/state/' + Number(state_id) + '/delete-shift/'+pulse_sequence_id, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            }
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            // Parse the JSON response
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Handle the JSON data
+                            rflink_items[Number(item_id)].states[Number(state_id)].pulses_shift = data.pulses_shift;
+                            populatePulsesShiftTable(item_id + "," + state_id);
+                            rflinkMaxCommonSubstringTextbox.value = data.max_common_substring;
+                        })
+                        .catch(error => {
+                            // Handle errors
+                            console.error('There was a problem with the fetch operation:', error);
+                        });
+                    }
+        
+                    function rflinkAddExactPulse()
+                    {
+                        const data = document.getElementById("rflink_messages").value;
+                        if(data.trim().length == 0)
+                        {
+                            return;
+                        }
+                        let pulseMiddle = -1
+                        if(data.indexOf("Pulses(uSec)=") >= 0)
+                        {
+                            // there are raw pulses which must be converted to 1s and 0s, need a pulse middle
+                            pulseMiddle = pulseMiddleTextbox.value;
+                            if(pulseMiddle.trim() == 0)
+                            {
+                                alert("Data contains pulses, must supply a pulse middle value for conversion to 1s and 0s");
+                                return;
+                            }
+                        }
+
+                        let item_state = document.getElementById("rflink_item_state_select").value;
+                        if(item_state == null || item_state == undefined || item_state.length == 0)
+                        {
+                            alert("Select an item command/state.");
+                            return;
+                        }
+
+                        const postData = { pulseMiddle: pulseMiddle, data: data };
+                        var [item_id, state_id] = item_state.split(",");
+                        console.log("posting: " + JSON.stringify(postData));
+                        
+                        // Make an HTTP GET request using fetch
+                        fetch('/rflink_item/' + Number(item_id) + '/state/' + Number(state_id) + '/add-exact', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            },
+                            body: JSON.stringify({ pulseMiddle: pulseMiddle, data: data }) // Convert the data to JSON format
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            // Parse the JSON response
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Handle the JSON data
+                            // console.log(data);
+                            console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_exact", rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact);
+                            rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact = data;
+                            populatePulsesExactTable(item_id + "," + state_id);
+                        })
+                        .catch(error => {
+                            // Handle errors
+                            console.error('There was a problem with the fetch operation:', error);
+                        });
+
+                    }
+
+                    function rflinkAddShiftPulse()
+                    {
+                        const data = document.getElementById("rflink_messages").value;
+                        if(data.trim().length == 0)
+                        {
+                            return;
+                        }
+                        let pulseMiddle = -1
+                        if(data.indexOf("Pulses(uSec)=") >= 0)
+                        {
+                            // there are raw pulses which must be converted to 1s and 0s, need a pulse middle
+                            pulseMiddle = document.getElementById("rflink_pulse_middle").value;
+                            if(pulseMiddle.trim() == 0)
+                            {
+                                alert("Data contains pulses, must supply a pulse middle value for conversion to 1s and 0s");
+                                return;
+                            }
+                        }
+
+                        let item_state = document.getElementById("rflink_item_state_select").value;
+                        if(item_state == null || item_state == undefined || item_state.length == 0)
+                        {
+                            alert("Select an item command/state.");
+                            return;
+                        }
+
+                        const postData = { pulseMiddle: pulseMiddle, data: data };
+                        var [item_id, state_id] = item_state.split(",");
+                        console.log("posting: " + JSON.stringify(postData));
+                        
+                        // Make an HTTP GET request using fetch
+                        fetch('/rflink_item/' + Number(item_id) + '/state/' + Number(state_id) + '/add-shift', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json' // Specify the content type as JSON
+                            },
+                            body: JSON.stringify({ pulseMiddle: pulseMiddle, data: data }) // Convert the data to JSON format
+                        })
+                        .then(response => {
+                            // Check if the response is OK (status code 200)
+                            if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                            }
+                            // Parse the JSON response
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Handle the JSON data
+                            // console.log(data);
+                            console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_shift", rflink_items[Number(item_id)].states[Number(state_id)].pulses_shift);
+                            rflink_items[Number(item_id)].states[Number(state_id)].pulses_shift = data.pulses_shift;
+                            populatePulsesShiftTable(item_id + "," + state_id);
+                            rflinkMaxCommonSubstringTextbox.value = data.max_common_substring;
+                        })
+                        .catch(error => {
+                            // Handle errors
+                            console.error('There was a problem with the fetch operation:', error);
+                        });
+                    }
+
+                    function populateRFLinkPulsesControls(optionValue) {
+                        let isIds = getItemIdStateId();
+                        rflinkExactPulseCheckbox.checked = rflink_items[isIds.item_id].states[isIds.state_id].use_exact_pulse;
+                        rflinkShiftWindowCheckbox.checked = rflink_items[isIds.item_id].states[isIds.state_id].use_shift_window;
+                        rflinkMaxCommonSubstringCheckbox.checked = rflink_items[isIds.item_id].states[isIds.state_id].use_max_common_substring;
+                        rflinkShiftWindowSizeTextbox.value = rflink_items[isIds.item_id].states[isIds.state_id].shift_window_size;
+                        rflinkMaxCommonSubstringTextbox.value = rflink_items[isIds.item_id].states[isIds.state_id].max_common_substring;
+                        pulseMiddleTextbox.value = rflink_items[isIds.item_id].states[isIds.state_id].pulse_middle;
+                        populateTables(optionValue);
+                    }
+
+                    function populateTables(optionValue) {
+                        populatePulsesExactTable(optionValue);
+                        populatePulsesShiftTable(optionValue);
+                    }
+
+                    function populatePulsesExactTable(optionValue) {
+                        rflinkItemStateExactPulseTableBody.innerHTML = ''; // Clear existing rows
+                        const parts = optionValue.split(",");
+                        const item_id = Number(parts[0]);
+                        const state_id = Number(parts[1]);
+                        // console.log("item_id: " + item_id + ", state_id: " + state_id);
+
+                        // Populate table with data
+                        rflink_items[item_id].states[state_id].pulses_exact.forEach((p,i) => {
+                            const row = document.createElement('tr');
+                            const cellCount = document.createElement('td');
+                            cellCount.textContent = p.length;
+                            row.appendChild(cellCount);
+                            const cellSequence = document.createElement('td');
+                            cellSequence.className = "sequence";
+                            cellSequence.textContent = p;
+                            row.appendChild(cellSequence);
+                            const cellActions = document.createElement('td');
+                            var deleteBtn = document.createElement('button');
+                            deleteBtn.textContent = "Delete";
+                            deleteBtn.addEventListener('click', function(){
+                                rflinkDeleteExactPulse(item_id, state_id, i);
+                            });
+                            cellActions.appendChild(deleteBtn);
+                            row.appendChild(cellActions);
+                            rflinkItemStateExactPulseTableBody.appendChild(row);
+                        });
+                    }
+
+                    function populatePulsesShiftTable(optionValue) {
+                        rflinkItemStateShiftPulseTableBody.innerHTML = ''; // Clear existing rows
+                        const parts = optionValue.split(",");
+                        const item_id = Number(parts[0]);
+                        const state_id = Number(parts[1]);
+                        // console.log("item_id: " + item_id + ", state_id: " + state_id);
+
+                        // Populate table with data
+                        rflink_items[item_id].states[state_id].pulses_shift.forEach((p,i) => {
+                            const row = document.createElement('tr');
+                            const cellCount = document.createElement('td');
+                            cellCount.textContent = p.length;
+                            row.appendChild(cellCount);
+                            const cellSequence = document.createElement('td');
+                            cellSequence.className = "sequence";
+                            cellSequence.textContent = p;
+                            row.appendChild(cellSequence);
+                            const cellActions = document.createElement('td');
+                            var deleteBtn = document.createElement('button');
+                            deleteBtn.textContent = "Delete";
+                            deleteBtn.addEventListener('click', function(){
+                                rflinkDeleteShiftPulse(item_id, state_id, i);
+                            });
+                            cellActions.appendChild(deleteBtn);
+                            row.appendChild(cellActions);
+                            rflinkItemStateShiftPulseTableBody.appendChild(row);
+                        });
+                    }
+
+                    rflinkItemSelect.addEventListener('change', function() {populateRFLinkPulsesControls(this.value);});
+                    // initially populate tables with the first command/state pulses of the first rflink item
+                    // because it is displayed first in the select element
+                    if( rflink_items.length > 0)
+                    {
+                        populateRFLinkPulsesControls("0,0");  
+                    }
+
                     var sse_connected = false;
                     var eventSource = new EventSource('/rflink/sse');
                     // Event listener for successful connection
@@ -851,11 +1358,17 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         eventSource.close();
                     };
 
-                    document.getElementById("activateRFLink").addEventListener("click", 
-                    function activateRFLink()
+                    document.getElementById("activateRFLink").addEventListener("click", function activateRFLink()
                     {
                         var form = document.getElementById("rfLinkConnectForm");
                         form.action = document.getElementById("activateRFLink").checked ? "/rflink/activate" : "/rflink/deactivate";
+                        form.submit(); // Submit the form
+                    });
+                    
+                    document.getElementById("debugRFLink").addEventListener("click", function debugRFLink()
+                    {
+                        var form = document.getElementById("rfLinkConnectForm");
+                        form.action = document.getElementById("debugRFLink").checked ? "/rflink/debug/1" : "/rflink/debug/0";
                         form.submit(); // Submit the form
                     });
 

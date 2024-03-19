@@ -32,6 +32,7 @@ urls = (
     '/delete/item/(\d+)', 'DeleteItem',
     '/rflink/activate', 'RFLinkActivate',
     '/rflink/deactivate', 'RFLinkDeactivate',
+    '/rflink/debug/(\d)', 'RFLinkDebug',
     '/rflink/sse', 'SSE',
     '/rflink_item', 'RFLinkItemIndex',
     '/rflink_item/create', 'RFLinkItemCreate',
@@ -42,7 +43,17 @@ urls = (
     '/rflink_item/(\d+)/command/(\d+)/delete', 'RFLinkItemCommandDelete',
     '/rflink_item/(\d+)/state/(\d+)/delete', 'RFLinkItemStateDelete',
     '/rflink_item/(\d+)/command/(\d+)/update', 'RFLinkItemCommandUpdate',
-    '/rflink_item/(\d+)/state/(\d+)/update', 'RFLinkItemStateUpdate'
+    '/rflink_item/(\d+)/state/(\d+)/update', 'RFLinkItemStateUpdate',
+    '/rflink_item/(\d+)/state/(\d+)/add-exact', 'RFLinkItemStateAddExact',
+    '/rflink_item/(\d+)/state/(\d+)/add-shift', 'RFLinkItemStateAddShift',
+    '/rflink_item/(\d+)/state/(\d+)/delete-exact/(\d+)', 'RFLinkItemStateDeleteExact',
+    '/rflink_item/(\d+)/state/(\d+)/delete-shift/(\d+)', 'RFLinkItemStateDeleteShift',
+    '/rflink_item/(\d+)/state/(\d+)/use-exact-pulse/(\d+)', 'RFLinkItemStateUseExactPulse',
+    '/rflink_item/(\d+)/state/(\d+)/use-shift-window/(\d+)', 'RFLinkItemStateUseShiftWindow',
+    '/rflink_item/(\d+)/state/(\d+)/shift-window-size/(\d+)', 'RFLinkItemStateShiftWindowSize',
+    '/rflink_item/(\d+)/state/(\d+)/use-max-common-substring/(\d+)', 'RFLinkItemStateUseMaxCommonSubstring',
+    '/rflink_item/(\d+)/state/(\d+)/pulse-middle', 'RFLinkItemStatePulseMiddle',
+    '/rflink_item/test', 'RFLinkItemTest'
 )
 
 # Create a directory named 'data' if it doesn't exist
@@ -87,7 +98,7 @@ if os.path.exists(rflink_file_path):
     with open(rflink_file_path, 'r') as f:
         rflink_settings = json.load(f)
 else:
-    rflink_settings = {"activated": False, "serial_port": "COM1", "items": []}
+    rflink_settings = {"activated": False, "debug": False, "serial_port": "COM1", "items": []}
 
 rflink = None
 # For some unknown reason rflink is initialized twice
@@ -176,7 +187,7 @@ class Settings:
             item_types=item_types, 
             items=items, 
             serial_ports = serial.tools.list_ports.comports(), 
-            rflink = { "connected" : get_rflink().connected, "error" : get_rflink().connection_error }, 
+            rflink = { "connected" : get_rflink().connected, "error" : get_rflink().connection_error, "debug": rflink_settings["debug"] }, 
             rflink_items = rflink_settings["items"], 
             rflink_item_index = data.rflink_item_index,
             showSection=data.showSection)
@@ -405,7 +416,7 @@ class RFLinkActivate:
         get_rflink().connect(rflink_settings["serial_port"])
         with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?showSection=rflink')
+        raise web.seeother('/settings?showSection=rflink,pulses')
 
 class RFLinkDeactivate:
     def POST(self):
@@ -414,7 +425,19 @@ class RFLinkDeactivate:
         rflink_settings["activated"] = False
         with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?showSection=rflink')
+        raise web.seeother('/settings?showSection=rflink,pulses')
+
+class RFLinkDebug:
+    def POST(self, debug):
+        debug = int(debug)
+        rflink_settings["debug"] = False if debug == 0 else True
+        with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+        if get_rflink().connected:
+            get_rflink().disconnect()
+            get_rflink().rflink_settings = rflink_settings
+            get_rflink().connect(rflink_settings["serial_port"])
+        raise web.seeother('/settings?showSection=rflink,pulses')
 
 class SSE:
     def GET(self):
@@ -444,7 +467,7 @@ class RFLinkItemCreate:
     def POST(self):
         data = web.input()
         print(f"rflink_item: {json.dumps(data, indent=4)}")
-        guid = str(uuid.uuid4())
+        # guid = str(uuid.uuid4())
         rflink_item_name = data.get("name")
         rflink_item_mqtt_server = data.get("mqtt_server")
         rflink_item_mqtt_state_publish_topic = data.get("mqtt_state_publish_topic")
@@ -452,7 +475,6 @@ class RFLinkItemCreate:
         rflink_item_commands = []
         rflink_item_states = []
         rflink_settings["items"].append({
-            "id": guid,
             "name": rflink_item_name,
             "mqtt_server": rflink_item_mqtt_server,
             "mqtt_state_publish_topic": rflink_item_mqtt_state_publish_topic,
@@ -463,7 +485,7 @@ class RFLinkItemCreate:
 
         with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?showSection=rflink')
+        raise web.seeother('/settings?showSection=rflink,item')
 
 class RFLinkItemUpdate:
     def POST(self, item_id):
@@ -480,8 +502,7 @@ class RFLinkItemUpdate:
             rflink_settings["items"][item_id]["mqtt_command_subscribe_topic"] = rflink_item_mqtt_command_subscribe_topic
             with open(rflink_file_path, 'w') as f:
                     json.dump(rflink_settings, f, indent=4)
-            raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
-
+            raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
 
 class RFLinkItemDelete:
     def POST(self, item_id):
@@ -490,7 +511,7 @@ class RFLinkItemDelete:
             del rflink_settings["items"][item_id]
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?showSection=rflink')
+        raise web.seeother('/settings?showSection=rflink,item')
 
 class RFLinkItemCommandCreate:
     def POST(self, item_id):
@@ -505,7 +526,7 @@ class RFLinkItemCommandCreate:
             })
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
+        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
     
 class RFLinkItemStateCreate:
     def POST(self, item_id):
@@ -517,13 +538,17 @@ class RFLinkItemStateCreate:
                 "name": data.get("rflink_item_state"),
                 "id": guid,
                 "pulses_exact": [],
+                "use_exact_pulse": True,
                 "pulses_shift": [],
-                "shift_window": 0,
-                "max_common_substring": None
+                "use_shift_window": True,
+                "shift_window_size": 0,
+                "use_max_common_substring": True,
+                "max_common_substring": None,
+                "pulse_middle": None
             })
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
+        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
 
 class RFLinkItemCommandUpdate:
     def POST(self, itemd_id, command_id):
@@ -533,7 +558,7 @@ class RFLinkItemCommandUpdate:
             rflink_settings["items"][item_id]["commands"][command_id]["name"] = web.input().get("rflink_item_command")
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
+        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
         
 class RFLinkItemStateUpdate:
     def POST(self, item_id, state_id):
@@ -543,7 +568,7 @@ class RFLinkItemStateUpdate:
             rflink_settings["items"][item_id]["states"][state_id]["name"] = web.input().get("rflink_item_state")
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
+        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
         
 class RFLinkItemCommandDelete:
     def POST(self, item_id, command_id):
@@ -553,7 +578,7 @@ class RFLinkItemCommandDelete:
             del rflink_settings["items"][item_id]["commands"][command_id]
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
+        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
 
 class RFLinkItemStateDelete:
     def POST(self, item_id, state_id):
@@ -563,7 +588,154 @@ class RFLinkItemStateDelete:
             del rflink_settings["items"][item_id]["states"][state_id]
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink')
+        raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
+
+class RFLinkItemStateAddExact:
+    def POST(self, item_id, state_id):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]) :
+            # web.input does not work
+            state = rflink_settings["items"][item_id]["states"][state_id]
+            postData = json.loads(web.data())
+            data = postData['data']
+            lines = data.split('\n')
+            # print(f"item: {item_id}, state: {state_id}, pulseMiddle: {pulseMiddle}")
+            for l in lines:
+                if len(l.strip()) == 0:
+                    print(f"Empty line")
+                    continue
+                state['pulses_exact'].append(get_rflink().processRawPulseLine(state['pulse_middle'], l))
+                
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+
+            return json.dumps(state['pulses_exact'])
+
+class RFLinkItemStateAddShift:
+    def POST(self, item_id, state_id):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]) :
+            # web.input does not work
+            state = rflink_settings["items"][item_id]["states"][state_id]
+            postData = json.loads(web.data())
+            data = postData['data']
+            lines = data.split('\n')
+            # print(f"item: {item_id}, state: {state_id}, pulseMiddle: {pulseMiddle}")
+            for l in lines:
+                if len(l.strip()) == 0:
+                    print(f"Empty line")
+                    continue
+                if RFLink.RAW_PULSE_PATTERN not in l:   # silently reject non raw-pulse lines
+                    continue
+                state['pulses_shift'].append(get_rflink().processRawPulseLine(state['pulse_middle'], l))
+            state["max_common_substring"] = get_rflink().getMaxCommonSubstring(state['pulses_shift'])   
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+
+            return json.dumps({ "pulses_shift": state['pulses_shift'], "max_common_substring": state["max_common_substring"]})
+
+class RFLinkItemStateDeleteExact:
+    def POST(self, item_id, state_id, pulse_sequence_id):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        pulse_sequence_id = int(pulse_sequence_id)
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]) and pulse_sequence_id < len(rflink_settings["items"][item_id]["states"][state_id]["pulses_exact"]) :
+            state = rflink_settings["items"][item_id]["states"][state_id]
+            del state["pulses_exact"][pulse_sequence_id]
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+
+            return json.dumps(state['pulses_exact'])
+
+class RFLinkItemStateDeleteShift:
+    def POST(self, item_id, state_id, pulse_sequence_id):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        pulse_sequence_id = int(pulse_sequence_id)
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]) and pulse_sequence_id < len(rflink_settings["items"][item_id]["states"][state_id]["pulses_shift"]) :
+            state = rflink_settings["items"][item_id]["states"][state_id]
+            del state["pulses_shift"][pulse_sequence_id]
+            state["max_common_substring"] = get_rflink().getMaxCommonSubstring(state['pulses_shift'])
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+
+            return json.dumps({ "pulses_shift": state['pulses_shift'], "max_common_substring": state["max_common_substring"]})
+
+class RFLinkItemStateUseExactPulse: 
+    def POST(self, item_id, state_id, use):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        use = int(use) == 1
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]):
+            rflink_settings["items"][item_id]["states"][state_id]["use_exact_pulse"] = use 
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+            return json.dumps({"success": True})
+            
+class RFLinkItemStateUseShiftWindow: 
+    def POST(self, item_id, state_id, use):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        use = int(use) == 1
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]):
+            rflink_settings["items"][item_id]["states"][state_id]["use_shift_window"] = use 
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+            return json.dumps({"success": True})
+            
+class RFLinkItemStateShiftWindowSize: 
+    def POST(self, item_id, state_id, size):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        size = int(size)
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]):
+            rflink_settings["items"][item_id]["states"][state_id]["shift_window_size"] = size 
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+            return json.dumps({"success": True})
+            
+class RFLinkItemStateUseMaxCommonSubstring: 
+    def POST(self, item_id, state_id, use):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        use = int(use) == 1
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]):
+            rflink_settings["items"][item_id]["states"][state_id]["use_max_common_substring"] = use 
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+            print(f"Returning ok")
+            return json.dumps({"success": True})
+        print(f"Returning nothing")
+        
+class RFLinkItemStatePulseMiddle: 
+    def POST(self, item_id, state_id):
+        item_id = int(item_id)
+        state_id = int(state_id)
+        if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]):
+            pulseMiddle = int(json.loads(web.data())['pulseMiddle'])
+            rflink_settings["items"][item_id]["states"][state_id]["pulse_middle"] = pulseMiddle 
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+            print(f"Returning ok")
+            return json.dumps({"success": True})
+        print(f"Returning nothing")
+        
+class RFLinkItemTest:
+    def POST(self):
+        data = json.loads(web.data())['data']
+        lines = data.split('\n')
+        print(f"Testing {len(lines)} lines")
+        results = []
+        for i,l in enumerate(lines):
+            print(f"Testing line {i}: {l}")
+            if len(l.strip()) == 0:
+                print(f"Empty line")
+                continue
+            results.append({ "line": l, "detection": get_rflink().detect(l, rflink_settings["items"]) })
+
+        return json.dumps(results, indent=4)
 
 app = web.application(urls, locals())
 
