@@ -765,6 +765,8 @@ class RFLinkItemTest:
         print(f"Testing {len(lines)} lines")
         results = []
         for i,l in enumerate(lines):
+            # remove the sequence id that rflink prefixes each line with
+            l = ';'.join(l.split(';')[2:])
             print(f"Testing line {i}: {l}")
             if len(l.strip()) == 0:
                 print(f"Empty line")

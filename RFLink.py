@@ -93,7 +93,8 @@ class RFLink:
 
     def processRawPulseLine(self, pulseMiddle, line):
         if RFLink.RAW_PULSE_PATTERN not in line:
-            return line
+            # remove the sequence id that rflink prefixes each line with
+            return ';'.join(line.split(';')[2:])
         
         pulses = RFLink.convert_text_to_binary(line, pulseMiddle, None, None)
         return ''.join([str(p) for p in pulses])
