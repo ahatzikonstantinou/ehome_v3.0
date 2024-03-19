@@ -44,8 +44,10 @@ urls = (
     '/rflink_item/(\d+)/state/(\d+)/delete', 'RFLinkItemStateDelete',
     '/rflink_item/(\d+)/command/(\d+)/update', 'RFLinkItemCommandUpdate',
     '/rflink_item/(\d+)/state/(\d+)/update', 'RFLinkItemStateUpdate',
+    '/rflink_item/(\d+)/command/(\d+)/add-exact', 'RFLinkItemCommandAddExact',
     '/rflink_item/(\d+)/state/(\d+)/add-exact', 'RFLinkItemStateAddExact',
     '/rflink_item/(\d+)/state/(\d+)/add-shift', 'RFLinkItemStateAddShift',
+    '/rflink_item/(\d+)/command/(\d+)/delete-exact/(\d+)', 'RFLinkItemCommandDeleteExact',
     '/rflink_item/(\d+)/state/(\d+)/delete-exact/(\d+)', 'RFLinkItemStateDeleteExact',
     '/rflink_item/(\d+)/state/(\d+)/delete-shift/(\d+)', 'RFLinkItemStateDeleteShift',
     '/rflink_item/(\d+)/state/(\d+)/use-exact-pulse/(\d+)', 'RFLinkItemStateUseExactPulse',
@@ -521,8 +523,8 @@ class RFLinkItemCommandCreate:
             guid = str(uuid.uuid4())
             rflink_settings["items"][item_id]["commands"].append({
                 "name": data.get("rflink_item_command"),
-                "id": guid,
-                "pulses":[]
+                "pulses_exact":[],
+                "pulse_middle": None
             })
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
@@ -536,7 +538,6 @@ class RFLinkItemStateCreate:
             guid = str(uuid.uuid4())
             rflink_settings["items"][item_id]["states"].append({
                 "name": data.get("rflink_item_state"),
-                "id": guid,
                 "pulses_exact": [],
                 "use_exact_pulse": True,
                 "pulses_shift": [],
@@ -590,6 +591,28 @@ class RFLinkItemStateDelete:
                 json.dump(rflink_settings, f, indent=4)
         raise web.seeother('/settings?rflink_item_index=' + str(item_id) + '&showSection=rflink,item')
 
+class RFLinkItemCommandAddExact:
+    def POST(self, item_id, command_id):
+        item_id = int(item_id)
+        command_id = int(command_id)
+        if item_id < len(rflink_settings["items"]) and command_id < len(rflink_settings["items"][item_id]["commands"]) :
+            # web.input does not work
+            command = rflink_settings["items"][item_id]["commands"][command_id]
+            postData = json.loads(web.data())
+            data = postData['data']
+            lines = data.split('\n')
+            # print(f"item: {item_id}, command: {command_id}, pulseMiddle: {pulseMiddle}")
+            for l in lines:
+                if len(l.strip()) == 0:
+                    print(f"Empty line")
+                    continue
+                command['pulses_exact'].append(get_rflink().processRawPulseLine(command['pulse_middle'], l))
+                
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+
+            return json.dumps(command['pulses_exact'])
+
 class RFLinkItemStateAddExact:
     def POST(self, item_id, state_id):
         item_id = int(item_id)
@@ -635,6 +658,19 @@ class RFLinkItemStateAddShift:
                 json.dump(rflink_settings, f, indent=4)
 
             return json.dumps({ "pulses_shift": state['pulses_shift'], "max_common_substring": state["max_common_substring"]})
+
+class RFLinkItemCommandDeleteExact:
+    def POST(self, item_id, command_id, pulse_sequence_id):
+        item_id = int(item_id)
+        command_id = int(command_id)
+        pulse_sequence_id = int(pulse_sequence_id)
+        if item_id < len(rflink_settings["items"]) and command_id < len(rflink_settings["items"][item_id]["commands"]) and pulse_sequence_id < len(rflink_settings["items"][item_id]["commands"][command_id]["pulses_exact"]) :
+            state = rflink_settings["items"][item_id]["commands"][command_id]
+            del state["pulses_exact"][pulse_sequence_id]
+            with open(rflink_file_path, 'w') as f:
+                json.dump(rflink_settings, f, indent=4)
+
+            return json.dumps(state['pulses_exact'])
 
 class RFLinkItemStateDeleteExact:
     def POST(self, item_id, state_id, pulse_sequence_id):

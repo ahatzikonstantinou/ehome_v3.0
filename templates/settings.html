@@ -35,7 +35,12 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     $for c in ri["commands"]:
                     {
                         name: "$c['name']",
-                        pulses: "$c['pulses']",
+                        pulses_exact: [
+                            $for e in c['pulses_exact']:
+                                "$e",
+                        ],
+                        pulse_middle: "$s['pulse_middle']"
+
                     },                
                 ],
                 states: [
@@ -633,7 +638,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     span.setAttribute("data-item_id", item_id);
                     
                     var closeButton = document.createElement('button');
-                    closeButton.textContent = "x";
+                    closeButton.innerHTML = "&times;";
                     closeButton.className = 'mdi mdi-close close';
                     closeButton.addEventListener('click', function() {
                         if(type == 'command')
@@ -852,52 +857,68 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <select id="rflink_item_state_select" name="rflink_item" required>
                             $for ri in rflink_items:
                                 $ i = loop.index0
+                                $for c in ri["commands"]:
+                                    <option value="$i,$(loop.index0),command">$(ri["name"])&nbsp;-&nbsp;command&nbsp;-&nbsp;$(c["name"])</option>
                                 $for s in ri["states"]:
-                                    <option value="$i, $(loop.index0)">$(ri["name"])&nbsp;-&nbsp;$(s["name"])</option>
+                                    <option value="$i,$(loop.index0),state">$(ri["name"])&nbsp;-&nbsp;state&nbsp;-&nbsp;$(s["name"])</option>
                         </select>
                     </div>
-                    <div class="controls">
+                    <div class="controls" id="rflink_pulse_middle_controls" hidden>
                         <label for="rflink_pulse_middle">Pulse middle:</label>
                         <input type="number" min="0" name="pulse_middle" id="rflink_pulse_middle">
                     </div>
                     <button id="rflink_pulse_add_exact_btn" onclick="rflinkAddExactPulse()">Add Exact</button>
-                    <button id="rflink_pulse_add_shift_btn" onclick="rflinkAddShiftPulse()">Add Shift</button>
+                    <button id="rflink_pulse_add_shift_btn" onclick="rflinkAddShiftPulse()" hidden>Add Shift</button>
                 <!-- </form> -->
-                <h4>
-                    <input type="checkbox" id="rflink-item-state-use-exact-pulse">
-                    Exact Comparison Pulse Sequences
-                </h4>
-                <table id="rflink-item-state-exact-pulse">
-                    <thead>
-                        <th>Count</th>
-                        <th>Sequence</th>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-                <h4>Shift Comparison Pulse Sequences</h4>
-                <table id="rflink-item-state-shift-pulse">
-                    <thead>
-                        <th>Count</th>
-                        <th>Sequence</th>
-                        <th></th>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-                <h4><input type="checkbox" id="rflink_item_use_shift_window">Shift window
-                    <div class="controls">
-                        <label for="rflink_shift_window_size">size:</label>
-                        <input type="number" min="1" id="rflink_shift_window_size" name="rflink_shift_window_size" required value="0">                    
-                    </div>
-                </h4>
-                <h4><input type="checkbox" id="use_rflink_max_common_substring">Max common substring
-                    <textarea id="rflink_max_common_substring" name="rflink_max_common_substring"  readonly></textarea>
-                </h4>
+                <div id="rflink-item-command" hidden>
+                    <h4>Exact Comparison Pulse Sequences</h4>
+                    <table id="rflink-item-command-exact-pulse">
+                        <thead>
+                            <th>Count</th>
+                            <th>Sequence</th>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="rflink-item-state" hidden>
+                    <h4>
+                        <input type="checkbox" id="rflink-item-state-use-exact-pulse">
+                        Exact Comparison Pulse Sequences
+                    </h4>
+                    <table id="rflink-item-state-exact-pulse">
+                        <thead>
+                            <th>Count</th>
+                            <th>Sequence</th>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <h4>Shift Comparison Pulse Sequences</h4>
+                    <table id="rflink-item-state-shift-pulse">
+                        <thead>
+                            <th>Count</th>
+                            <th>Sequence</th>
+                            <th></th>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <h4><input type="checkbox" id="rflink_item_use_shift_window">Shift window
+                        <div class="controls">
+                            <label for="rflink_shift_window_size">size:</label>
+                            <input type="number" min="1" id="rflink_shift_window_size" name="rflink_shift_window_size" required value="0">                    
+                        </div>
+                    </h4>
+                    <h4><input type="checkbox" id="use_rflink_max_common_substring">Max common substring
+                        <textarea id="rflink_max_common_substring" name="rflink_max_common_substring"  readonly></textarea>
+                    </h4>
+                </div>
             </div>
                 <script>
                     const rflink_messages = document.getElementById('rflink_messages');
                     const rflinkItemSelect = document.getElementById('rflink_item_state_select');
+                    const rflinkItemCommandExactPulseTableBody = document.querySelector('#rflink-item-command-exact-pulse tbody');
                     const rflinkItemStateExactPulseTableBody = document.querySelector('#rflink-item-state-exact-pulse tbody');
                     const rflinkItemStateShiftPulseTableBody = document.querySelector('#rflink-item-state-shift-pulse tbody');
                     const rflinkExactPulseCheckbox = document.getElementById("rflink-item-state-use-exact-pulse");
@@ -909,6 +930,10 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     const modalTestResultsDiv = document.getElementById("modalTestResults");
                     const testResultsTextarea = document.getElementById("rflink_test_results");
                     const modalTestResultsCloseSpan = document.querySelector("#modalTestResults span.close"); 
+                    const rflinkItemStateDiv = document.getElementById("rflink-item-state");
+                    const rflinkItemCommandDiv = document.getElementById("rflink-item-command");
+                    const rflinkPulseAddShiftBtn = document.getElementById("rflink_pulse_add_shift_btn");
+                    const rflinkPulseMiddleControls = document.getElementById("rflink_pulse_middle_controls");
 
                     modalTestResultsCloseSpan.onclick = function(){
                         modalTestResultsDiv.style.display = "none";
@@ -957,17 +982,26 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         });
                     }
 
-                    function getItemIdStateId()
+                    function getItemIdStateId(showAlert=true, throwException=true)
                     {
                         let item_state = document.getElementById("rflink_item_state_select").value;
+                        console.log("item_state: ", item_state);
                         if(item_state == null || item_state == undefined || item_state.length == 0)
                         {
-                            alert("Select an item command/state.");
-                            throw "Select an item command/state.";
+                            if(showAlert)
+                            {
+                                console.log("showing alert");
+                                alert("Select an item command/state.");
+                            }
+                            if(throwException)
+                            {
+                                console.log("throwing exception");
+                                throw "Select an item command/state.";
+                            }
                         }
 
-                        var [item_id, state_id] = item_state.split(",");
-                        return {item_id: Number(item_id), state_id: Number(state_id)};
+                        var [item_id, state_id, type] = item_state.split(",");
+                        return {item_id: Number(item_id), state_id: Number(state_id), type: type};
                     }
 
                     pulseMiddleTextbox.onchange = function()
@@ -1075,9 +1109,9 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         })
                     }
 
-                    function rflinkDeleteExactPulse(item_id, state_id, pulse_sequence_id){
+                    function rflinkDeleteStateExactPulse(item_id, state_id, pulse_sequence_id, type){
                         // Make an HTTP GET request using fetch
-                        fetch('/rflink_item/' + Number(item_id) + '/state/' + Number(state_id) + '/delete-exact/'+pulse_sequence_id, {
+                        fetch('/rflink_item/' + Number(item_id) + '/' + type + '/' + Number(state_id) + '/delete-exact/'+pulse_sequence_id, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json' // Specify the content type as JSON
@@ -1093,10 +1127,19 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         })
                         .then(data => {
                             // Handle the JSON data
-                            // console.log(data);
-                            console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_exact", rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact);
-                            rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact = data;
-                            populatePulsesExactTable(item_id + "," + state_id);
+                            if(type == "command")
+                            {
+                                console.log("setting rflink_items["+item_id+"].commands["+state_id+"].pulses_exact", rflink_items[Number(item_id)].commands[Number(state_id)].pulses_exact);
+                                rflink_items[Number(item_id)].commands[Number(state_id)].pulses_exact = data;
+                                populateCommandPulsesExactTable(item_id + "," + state_id);
+
+                            }
+                            else if(type == "state")
+                            {
+                                console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_exact", rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact);
+                                rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact = data;
+                                populateStatePulsesExactTable(item_id + "," + state_id);
+                            }
                         })
                         .catch(error => {
                             // Handle errors
@@ -1151,19 +1194,23 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                             }
                         }
 
-                        let item_state = document.getElementById("rflink_item_state_select").value;
-                        if(item_state == null || item_state == undefined || item_state.length == 0)
+                        let item_id = null;
+                        let state_id = null;
+                        let type = null;
+                        try{
+                            var ids = getItemIdStateId(false);
+                            item_id = ids.item_id;
+                            state_id = ids.state_id;
+                            type = ids.type;
+                        }
+                        catch(error)
                         {
-                            alert("Select an item command/state.");
+                            alert("Select an item command/state. Error:", error);
                             return;
                         }
-
-                        const postData = { pulseMiddle: pulseMiddle, data: data };
-                        var [item_id, state_id] = item_state.split(",");
-                        console.log("posting: " + JSON.stringify(postData));
                         
                         // Make an HTTP GET request using fetch
-                        fetch('/rflink_item/' + Number(item_id) + '/state/' + Number(state_id) + '/add-exact', {
+                        fetch('/rflink_item/' + Number(item_id) + '/' + type + '/' + Number(state_id) + '/add-exact', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json' // Specify the content type as JSON
@@ -1181,9 +1228,18 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         .then(data => {
                             // Handle the JSON data
                             // console.log(data);
-                            console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_exact", rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact);
-                            rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact = data;
-                            populatePulsesExactTable(item_id + "," + state_id);
+                            if(type == "command")
+                            {
+                                console.log("setting rflink_items["+item_id+"].commands["+state_id+"].pulses_exact", rflink_items[Number(item_id)].commands[Number(state_id)].pulses_exact);
+                                rflink_items[Number(item_id)].commands[Number(state_id)].pulses_exact = data;
+                                populateCommandPulsesExactTable(item_id + "," + state_id);
+                            }
+                            else if(type == "state")
+                            {
+                                console.log("setting rflink_items["+item_id+"].states["+state_id+"].pulses_exact", rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact);
+                                rflink_items[Number(item_id)].states[Number(state_id)].pulses_exact = data;
+                                populateStatePulsesExactTable(item_id + "," + state_id);
+                            }
                         })
                         .catch(error => {
                             // Handle errors
@@ -1253,22 +1309,63 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     }
 
                     function populateRFLinkPulsesControls(optionValue) {
-                        let isIds = getItemIdStateId();
-                        rflinkExactPulseCheckbox.checked = rflink_items[isIds.item_id].states[isIds.state_id].use_exact_pulse;
-                        rflinkShiftWindowCheckbox.checked = rflink_items[isIds.item_id].states[isIds.state_id].use_shift_window;
-                        rflinkMaxCommonSubstringCheckbox.checked = rflink_items[isIds.item_id].states[isIds.state_id].use_max_common_substring;
-                        rflinkShiftWindowSizeTextbox.value = rflink_items[isIds.item_id].states[isIds.state_id].shift_window_size;
-                        rflinkMaxCommonSubstringTextbox.value = rflink_items[isIds.item_id].states[isIds.state_id].max_common_substring;
-                        pulseMiddleTextbox.value = rflink_items[isIds.item_id].states[isIds.state_id].pulse_middle;
-                        populateTables(optionValue);
+                        let ids = getItemIdStateId();
+                        
+                        if(ids.type == "command")
+                        {
+                            rflinkItemStateDiv.style.display = "none";
+                            rflinkPulseMiddleControls.style.display = "none";
+                            rflinkPulseAddShiftBtn.style.display = "none";
+                            rflinkItemCommandDiv.style.display = "block";
+                            populateCommandPulsesExactTable(optionValue);
+                        }
+                        else if(ids.type == "state")
+                        {
+                            rflinkItemStateDiv.style.display = "block";
+                            rflinkPulseMiddleControls.style.display = "";
+                            rflinkPulseAddShiftBtn.style.display = "inline";
+                            rflinkItemCommandDiv.style.display = "none";
+                            rflinkExactPulseCheckbox.checked = rflink_items[ids.item_id].states[ids.state_id].use_exact_pulse;
+                            rflinkShiftWindowCheckbox.checked = rflink_items[ids.item_id].states[ids.state_id].use_shift_window;
+                            rflinkMaxCommonSubstringCheckbox.checked = rflink_items[ids.item_id].states[ids.state_id].use_max_common_substring;
+                            rflinkShiftWindowSizeTextbox.value = rflink_items[ids.item_id].states[ids.state_id].shift_window_size;
+                            rflinkMaxCommonSubstringTextbox.value = rflink_items[ids.item_id].states[ids.state_id].max_common_substring;
+                            pulseMiddleTextbox.value = rflink_items[ids.item_id].states[ids.state_id].pulse_middle;
+                            populateStatePulsesExactTable(optionValue);
+                            populatePulsesShiftTable(optionValue);
+                        }                        
+                    }                    
+
+                    function populateCommandPulsesExactTable(optionValue) {
+                        rflinkItemCommandExactPulseTableBody.innerHTML = ''; // Clear existing rows
+                        const parts = optionValue.split(",");
+                        const item_id = Number(parts[0]);
+                        const command_id = Number(parts[1]);
+                        console.log("item_id: " + item_id + ", command_id: " + command_id);
+
+                        // Populate table with data
+                        rflink_items[item_id].commands[command_id].pulses_exact.forEach((p,i) => {
+                            const row = document.createElement('tr');
+                            const cellCount = document.createElement('td');
+                            cellCount.textContent = p.length;
+                            row.appendChild(cellCount);
+                            const cellSequence = document.createElement('td');
+                            cellSequence.className = "sequence";
+                            cellSequence.textContent = p;
+                            row.appendChild(cellSequence);
+                            const cellActions = document.createElement('td');
+                            var deleteBtn = document.createElement('button');
+                            deleteBtn.textContent = "Delete";
+                            deleteBtn.addEventListener('click', function(){
+                                rflinkDeleteStateExactPulse(item_id, command_id, i, "command");
+                            });
+                            cellActions.appendChild(deleteBtn);
+                            row.appendChild(cellActions);
+                            rflinkItemCommandExactPulseTableBody.appendChild(row);
+                        });
                     }
 
-                    function populateTables(optionValue) {
-                        populatePulsesExactTable(optionValue);
-                        populatePulsesShiftTable(optionValue);
-                    }
-
-                    function populatePulsesExactTable(optionValue) {
+                    function populateStatePulsesExactTable(optionValue) {
                         rflinkItemStateExactPulseTableBody.innerHTML = ''; // Clear existing rows
                         const parts = optionValue.split(",");
                         const item_id = Number(parts[0]);
@@ -1289,7 +1386,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                             var deleteBtn = document.createElement('button');
                             deleteBtn.textContent = "Delete";
                             deleteBtn.addEventListener('click', function(){
-                                rflinkDeleteExactPulse(item_id, state_id, i);
+                                rflinkDeleteStateExactPulse(item_id, state_id, i, "state");
                             });
                             cellActions.appendChild(deleteBtn);
                             row.appendChild(cellActions);

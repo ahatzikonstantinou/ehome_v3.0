@@ -236,16 +236,18 @@ class RFLink:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
                         results[i]['states'].append({"name": s["name"], "type": "exact", "pulses": e})
-                if s['max_common_substring'] and s['max_common_substring'] in data:
-                    if i not in results:
-                        results[i] = {"name": t['name'], "commands": [], "states": []}
-                    results[i]['states'].append({"name": s["name"], "type": "max_common_substring", "pulses": s['max_common_substring']})
-                for e in s['pulses_shift']:
-                    if RFLink.compareAndShift(data, e, s['shift_window_size']):
+
+                if RFLink.RAW_PULSE_PATTERN in line: # only raw pulses are compared using shift window and max_common_substring
+                    if s['max_common_substring'] and s['max_common_substring'] in data:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
-                        print(f"Appending to states of item {i}")
-                        results[i]['states'].append({"name": s["name"], "type": "shift", "pulses": e})                    
+                        results[i]['states'].append({"name": s["name"], "type": "max_common_substring", "pulses": s['max_common_substring']})
+                    for e in s['pulses_shift']:
+                        if RFLink.compareAndShift(data, e, s['shift_window_size']):
+                            if i not in results:
+                                results[i] = {"name": t['name'], "commands": [], "states": []}
+                            print(f"Appending to states of item {i}")
+                            results[i]['states'].append({"name": s["name"], "type": "shift", "pulses": e})                    
         print(f"Results:{json.dumps(results, indent=4)}")        
         return results
 
