@@ -219,8 +219,14 @@ class RFLink:
             for c in t['commands']:
                 data = line                
                 if RFLink.RAW_PULSE_PATTERN in line:
+                    if not s['pulse_middle']:
+                        # if the command has no pulse_middle defined this raw pulse cannot be
+                        # converted to binary and therefore cannot be processed
+                        continue
+
                     data = RFLink.convert_text_to_binary(line, c['pulse_middle'])
                 for e in c['pulses_exact']:
+                    print(f"Doing command {e}")
                     if e == data:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
@@ -230,20 +236,27 @@ class RFLink:
                 print(f"Doing state {s['name']}")
                 data = line                
                 if RFLink.RAW_PULSE_PATTERN in line:
+                    if not s['pulse_middle']:
+                        # if the state has no pulse_middle defined this raw pulse cannot be
+                        # converted to binary and therefore cannot be processed
+                        continue
                     data = ''.join(str(bit) for bit in RFLink.convert_text_to_binary(line, s['pulse_middle']))
                     print(f"converted line to: {data}")
                 for e in s['pulses_exact']:
+                    print(f"Doing state exact {e}")
                     if e == data:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
                         results[i]['states'].append({"name": s["name"], "type": "exact", "pulses": e})
 
                 if RFLink.RAW_PULSE_PATTERN in line: # only raw pulses are compared using shift window and max_common_substring
+                    print(f"Doing state max_common_substring {s['max_common_substring']}")
                     if s['max_common_substring'] and s['max_common_substring'] in data:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
                         results[i]['states'].append({"name": s["name"], "type": "max_common_substring", "pulses": s['max_common_substring']})
                     for e in s['pulses_shift']:
+                        print(f"Doing state compareAndShift {e}")
                         if RFLink.compareAndShift(data, e, s['shift_window_size']):
                             if i not in results:
                                 results[i] = {"name": t['name'], "commands": [], "states": []}
