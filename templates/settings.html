@@ -571,6 +571,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <button id="rflink-commands-cancel-btn" hidden>Cancel</button>
                     </div>
                 </form>
+                <note>Note that state names are case sensitive, which means that when a state is detected the relevant mqtt message that will be transmitted will be <code>{"state" : "state_name"}</code></note>
                 <form id="rflink_item_state_form" action="/rflink_item/state/create" method="post">
                     <div class="form-group">
                         <label>States:</label>

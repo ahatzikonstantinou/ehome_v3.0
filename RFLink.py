@@ -6,6 +6,10 @@ import threading
 
 import json #for deubugging
 
+class DetectedState:
+    def __init__(self, rflink_item, state_name):
+        self.rflink_item = rflink_item 
+        self.state_name = state_name
 
 class RFLink:
     CONNECTED_PATTERN = "Nodo RadioFrequencyLink - RFLink Gateway"
@@ -208,7 +212,7 @@ class RFLink:
     
     @staticmethod
     def detect(line, rflink_items):
-        # in results each items has "commands": [], "states": []
+        # in results each item has "name", "commands": [], "states": []
         # a command is the command's name, pulse sequence
         # a state is the state's name, exact/max common substring/shift window, pulse sequence
         results = {}
@@ -264,6 +268,18 @@ class RFLink:
                             results[i]['states'].append({"name": s["name"], "type": "shift", "pulses": e})                    
         print(f"Results:{json.dumps(results, indent=4)}")        
         return results
+
+    def detectStates(self, line):
+        print("Will detect states from line {line}")
+        detectedStates = []
+        results = RFLink.detect(line, self.rflink_settings["items"])
+        for rflink_item_index, value in results.items():
+            rflink_item = self.rflink_settings["items"][rflink_item_index]
+            for s in results[rflink_item_index]["states"]:
+                detectedStates.append(DetectedState(rflink_item, s["name"]))
+        
+        print(f"Returning {len(detectedStates)} detected states")
+        return detectedStates
 
     def compare(data1, data2):
         # print(f"Comparing data1: {data1}")

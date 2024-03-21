@@ -140,11 +140,11 @@ def get_rflink():
         rflink = RFLink(rflink_settings)
     return rflink
 
-def publish_mqtt(server, data):
+def publish_mqtt(server, topic, data):
     try:
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         client.connect(host=server['address'], port=int(server['port']))
-        client.publish("test/topic", data)
+        client.publish(topic, data)
         client.disconnect()
         print(f"Published message successfully to {server['address']}")
     except Exception as e:
@@ -164,14 +164,36 @@ def publish_mqtt(server, data):
 class Messenger:
     def __init__(self):
         print(f"Messenger starting.")
-        
-    def SendData(self):
-        print("Set to send data.")
-        thread = threading.Thread(target=self.publish_mqtt_thread)
+        self.queue = queue.Queue()
+        thread = threading.Thread(target=self.publish_state_thread)
         thread.daemon = True  # Daemonize the thread so it exits when the main program exits
         thread.start()
 
-    def publish_mqtt_thread(self):
+    def SendData(self):
+        print("Set to send data.")
+        thread = threading.Thread(target=self.publish_settings_thread)
+        thread.daemon = True  # Daemonize the thread so it exits when the main program exits
+        thread.start()
+    
+    def SendStates(self, detectedStates):
+        self.queue.put(detectedStates)
+        print("Set to send states.")
+
+
+    def publish_state_thread(self):
+        while True:
+            if not self.queue.empty():
+                detectedStates = self.queue.get()
+                for ds in detectedStates:
+                    publish_mqtt(
+                        mqtt_servers[int(ds.rflink_item["mqtt_server"])],
+                        ds.rflink_item["mqtt_state_publish_topic"], 
+                        f"{{\"state\": \"{ds.state_name}\"}}"
+                    )
+            else:
+                time.sleep(0.1)  # Sleep if the queue is empty
+
+    def publish_settings_thread(self):
         data = {
             'mqtt_servers': mqtt_servers,
             'containers': containers,
@@ -179,7 +201,7 @@ class Messenger:
             'items': items
         }
         for server in mqtt_servers:
-            publish_mqtt(server, json.dumps(data, indent=4))
+            publish_mqtt(server, "test/topic", json.dumps(data, indent=4))
 
 messenger = Messenger()
 
@@ -470,7 +492,19 @@ class SSE:
                 try:
                     data = rflink.serial.readline().decode('utf-8').strip()
                     if data:
+                        
+                        # 1. have rflink detect of this is a known state
+                        # remove the sequence id that rflink prefixes each line with
+                        line = ';'.join(data.split(';')[2:])
+                        print(f"Will try line: {line}")
+                        if len(line.strip()) == 0:
+                            print(f"Empty line")
+                            continue
+                        messenger.SendStates(rflink.detectStates(line))
+
+                        # 2. Send thae recieved data to the settings web page via Server-Sent-Event
                         yield f"data: {data}\n\n\n" #3 \n here to display correctly in textarea
+
                 except Exception as e:
                     print(f"Error reading from serial port: {e}")
             
@@ -787,6 +821,8 @@ class RFLinkItemTest:
                 print(f"Empty line")
                 continue
             results.append({ "line": l, "detection": get_rflink().detect(l, rflink_settings["items"]) })
+
+            messenger.SendStates(rflink.detectStates(l))
 
         return json.dumps(results, indent=4)
 
