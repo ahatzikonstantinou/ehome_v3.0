@@ -265,7 +265,6 @@ class RFLink:
         print(f"Results:{json.dumps(results, indent=4)}")        
         return results
 
-
     def compare(data1, data2):
         # print(f"Comparing data1: {data1}")
         # print(f"with data2: {data2}")

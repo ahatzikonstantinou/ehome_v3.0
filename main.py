@@ -8,10 +8,8 @@ import threading
 import serial.tools.list_ports
 from RFLink import RFLink
 import asyncio
-import websockets
 import queue
 import signal
-import rflink_item
 
 urls = (
     '/', 'Index',
@@ -102,16 +100,6 @@ if os.path.exists(rflink_file_path):
 else:
     rflink_settings = {"activated": False, "debug": False, "serial_port": "COM1", "items": []}
 
-rflink = None
-# For some unknown reason rflink is initialized twice
-# which means that if the rflink_settings have activated = True
-# there will be two attempts to open the serial port
-# rflink = RFLink(rflink_settings). 
-def get_rflink():
-    global rflink
-    if rflink is None:
-        rflink = RFLink(rflink_settings)
-    return rflink
 
 domains = ["LIGHT", "DOOR", "WINDOW", "CLIMATE", "CAMERA"]
 
@@ -141,9 +129,20 @@ item_types = [
  
 render = web.template.render('templates/')
 
+rflink = None
+# For some unknown reason rflink is initialized twice
+# which means that if the rflink_settings have activated = True
+# there will be two attempts to open the serial port
+# rflink = RFLink(rflink_settings). 
+def get_rflink():
+    global rflink
+    if rflink is None:
+        rflink = RFLink(rflink_settings)
+    return rflink
+
 def publish_mqtt(server, data):
-    client = mqtt.Client()
     try:
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
         client.connect(host=server['address'], port=int(server['port']))
         client.publish("test/topic", data)
         client.disconnect()
@@ -151,13 +150,25 @@ def publish_mqtt(server, data):
     except Exception as e:
         print(f"Failed to connect to {server['address']}: {e}")
 
+#
+# ATTENTION
+# For some unknown reason global variables like messenger and rflink are initialized twice because of
+# if __name__ == "__main__":    
+#    app.run()
+# If this is commented out they are initialized once, but then the application does not run
+# For Messenger double initialization is not problem. But for objects like rflink that open the serial port
+# this means that the second time the port is already open and the second initialization fails.
+# The singleton pattern does not work either.
+# The only solution is a function like get_rflink()
+
 class Messenger:
     def __init__(self):
-        self.i = 0
+        print(f"Messenger starting.")
         
     def SendData(self):
         print("Set to send data.")
         thread = threading.Thread(target=self.publish_mqtt_thread)
+        thread.daemon = True  # Daemonize the thread so it exits when the main program exits
         thread.start()
 
     def publish_mqtt_thread(self):
@@ -169,10 +180,15 @@ class Messenger:
         }
         for server in mqtt_servers:
             publish_mqtt(server, json.dumps(data, indent=4))
-        self.i = (self.i + 1) % 100
-
 
 messenger = Messenger()
+
+# _messenger = None
+# def messenger():
+#     global _messenger
+#     if _messenger is None:
+#         _messenger = Messenger()
+#     return _messenger
 
 class Index:
     def GET(self):
@@ -405,7 +421,6 @@ class MoveItem:
             return
         data = web.input()
         print(f"New position for {items[item_id].itemName} is {data.get('order')}")
-        
 
 rflink_data = queue.Queue()
    
@@ -775,8 +790,7 @@ class RFLinkItemTest:
 
         return json.dumps(results, indent=4)
 
-app = web.application(urls, locals())
+app = web.application(urls, globals())
 
-if __name__ == "__main__":
-    
+if __name__ == "__main__":    
     app.run()
