@@ -10,10 +10,10 @@
         </div>    
         <div class="state-container">
             <div>
-            <span class="state top" ng-class="{ 'warning': i.device.state.main == 'OPEN', 'info': i.device.state.main == 'CLOSED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.main}}">{{i.device.state.main}}</span>
+            <span class="state top" ng-class="{ 'warning': i.device.state.main == 'OPEN', 'info': i.device.state.main == 'CLOSED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }" data-translate="home.state.{i.device.state.main}">{{i.device.state.main}}</span>
             </div>
             <div style="margin-top:8px;">
-            <span class="state" ng-class="{ 'warning': i.device.state.recline == 'OPEN', 'info': i.device.state.recline == 'CLOSED', 'unavailable': i.device.state.recline == 'UNAVAILABLE' }" data-translate="{{'home.state.' + (i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline)}}">
+            <span class="state" ng-class="{ 'warning': i.device.state.recline == 'OPEN', 'info': i.device.state.recline == 'CLOSED', 'unavailable': i.device.state.recline == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline)}">
                 {{i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline }}
             </span>
             </div>

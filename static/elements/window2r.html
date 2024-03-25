@@ -10,13 +10,13 @@
         </div>    
         <div class="state-container">
             <div class="state-row">
-                <span style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.recline == 'OPEN', 'info': i.device.state.recline == 'CLOSED', 'unavailable': i.device.state.recline == 'UNAVAILABLE' }" data-translate="{{'home.state.' + (i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline)}}">
+                <span style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.recline == 'OPEN', 'info': i.device.state.recline == 'CLOSED', 'unavailable': i.device.state.recline == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline)}">
                     {{i.device.state.recline == 'OPEN' ? 'RECLINED' : i.device.state.recline }}
                 </span>
             </div>
             <div class="state-row">
-                <span class="state" ng-class="{ 'warning': i.device.state.left == 'OPEN', 'info': i.device.state.left == 'CLOSED', 'unavailable': i.device.state.left == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.left}}">{{i.device.state.left}}</span>
-                <span class="state" ng-class="{ 'warning': i.device.state.right == 'OPEN', 'info': i.device.state.right == 'CLOSED', 'unavailable': i.device.state.right == 'UNAVAILABLE' }" data-translate="{{'home.state.' + i.device.state.right}}">{{i.device.state.right}}</span>
+                <span class="state" ng-class="{ 'warning': i.device.state.left == 'OPEN', 'info': i.device.state.left == 'CLOSED', 'unavailable': i.device.state.left == 'UNAVAILABLE' }" data-translate="home.state.{i.device.state.left}">{{i.device.state.left}}</span>
+                <span class="state" ng-class="{ 'warning': i.device.state.right == 'OPEN', 'info': i.device.state.right == 'CLOSED', 'unavailable': i.device.state.right == 'UNAVAILABLE' }" data-translate="home.state.{i.device.state.right}">{{i.device.state.right}}</span>
             </div>
             <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>

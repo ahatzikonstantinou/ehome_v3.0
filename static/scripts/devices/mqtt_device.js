@@ -59,11 +59,11 @@ MqttDevice.prototype.update = function( topic, message )
 {
     if( topic == this.mqtt_publish_topic )
     {
-        console.log( 'MqttDevice[' + this.mqtt_publish_topic +']: this message is for me.' );
+        // console.log( 'MqttDevice[' + this.mqtt_publish_topic +']: this message is for me.' );
         try
         {            
             this.state.Update( JSON.parse( message ) );
-            console.log("state now: ", this.state);
+            // console.log("state now: ", this.state);
             this.lastUpdateDate = new Date().toLocaleString();
             this.mqtt_message = message;
             return true;
