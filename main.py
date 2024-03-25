@@ -10,6 +10,9 @@ from RFLink import RFLink
 import asyncio
 import queue
 import signal
+import subprocess   #to get paho-mqtt version
+from packaging import version #to compare paho-mqtt version
+
 
 urls = (
     '/', 'Index',
@@ -140,13 +143,33 @@ def get_rflink():
         rflink = RFLink(rflink_settings)
     return rflink
 
+def get_paho_mqtt_version():
+    try:
+        result = subprocess.check_output(['pip', 'show', 'paho-mqtt'])
+        lines = result.decode('utf-8').split('\n')
+        version_line = next((line for line in lines if line.startswith('Version: ')), None)
+        if version_line:
+            return version_line.split(' ')[1].strip()
+    except subprocess.CalledProcessError:
+        pass
+    return None
+
+paho_mqtt_version = get_paho_mqtt_version()
+break_paho_mqtt_version = "2.0.0"
+use_paho_client_constructor_arg = version.parse(paho_mqtt_version) >= version.parse(break_paho_mqtt_version)
+print(f"paho_mqtt_version: {paho_mqtt_version} (:{version.parse(paho_mqtt_version)}), break_paho_mqtt_version:{break_paho_mqtt_version} (:{version.parse(break_paho_mqtt_version)}), use_paho_client_constructor_arg: {use_paho_client_constructor_arg}")
+
 def publish_mqtt(server, topic, data):
     try:
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        client = None
+        if use_paho_client_constructor_arg:
+            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+        else:
+            client = mqtt.Client()
         client.connect(host=server['address'], port=int(server['port']))
         client.publish(topic, data)
         client.disconnect()
-        print(f"Published message successfully to {server['address']}")
+        print(f"Published topic: {topic}, message: {data}, successfully to {server['address']}")
     except Exception as e:
         print(f"Failed to connect to {server['address']}: {e}")
 
@@ -188,7 +211,7 @@ class Messenger:
                     publish_mqtt(
                         mqtt_servers[int(ds.rflink_item["mqtt_server"])],
                         ds.rflink_item["mqtt_state_publish_topic"], 
-                        f"{{\"state\": \"{ds.state_name}\"}}"
+                        f"{ds.state_name}"
                     )
             else:
                 time.sleep(0.1)  # Sleep if the queue is empty
@@ -220,13 +243,19 @@ class Settings:
     def GET(self):
         data = web.input(rflink_item_index=None, showSection="mqtt")
         # print("Sending mqtt_servers: {}".format(json.dumps(mqtt_servers, indent=4)))
+        ports = serial.tools.list_ports.comports()
+        serial_ports = []
+        # split each serial port object so I can get its full name
+        for port, desc, hwid in sorted(ports):
+            # print(f"Port: {port}, Description: {desc}, Hardware ID: {hwid}")
+            serial_ports.append(port)
         return render.settings(
             mqtt_servers=mqtt_servers, 
             containers=containers, 
             domains=domains, 
             item_types=item_types, 
             items=items, 
-            serial_ports = serial.tools.list_ports.comports(), 
+            serial_ports = serial_ports, 
             rflink = { "connected" : get_rflink().connected, "error" : get_rflink().connection_error, "debug": rflink_settings["debug"] }, 
             rflink_items = rflink_settings["items"], 
             rflink_item_index = data.rflink_item_index,
@@ -452,7 +481,11 @@ class RFLinkActivate:
         rflink_settings["activated"] = True
         rflink_settings["serial_port"] = data.get("serial_port")
         print(f"serial port: {rflink_settings['serial_port']}")
-        get_rflink().connect(rflink_settings["serial_port"])
+        try:
+            get_rflink().connect(rflink_settings["serial_port"])
+        except Exception as e:
+                print(f"Could not connect to serial port {rflink_settings['serial_port']}. Error: {e}")
+                return json.dumps({"error": str(e)})
         with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
         raise web.seeother('/settings?showSection=rflink,pulses')
@@ -569,7 +602,6 @@ class RFLinkItemCommandCreate:
         item_id = int(item_id)
         data = web.input()
         if item_id < len(rflink_settings["items"]):
-            guid = str(uuid.uuid4())
             rflink_settings["items"][item_id]["commands"].append({
                 "name": data.get("rflink_item_command"),
                 "pulses_exact":[],
@@ -584,7 +616,6 @@ class RFLinkItemStateCreate:
         item_id = int(item_id)
         data = web.input()
         if item_id < len(rflink_settings["items"]):
-            guid = str(uuid.uuid4())
             rflink_settings["items"][item_id]["states"].append({
                 "name": data.get("rflink_item_state"),
                 "pulses_exact": [],

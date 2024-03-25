@@ -294,6 +294,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             evalValues(document.getElementById('content'));
             compileNgClick();
             compileNgDisabled();
+            compileTranslations();
             
             proxyContainerRecompileNgClass = true;
             // console.log("full text: ", document.getElementById("content").innerHTML);            
@@ -329,6 +330,7 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                             compileNgClass();
                             compileNgDisabled();
                             compileNgTextContent();
+                            compileTranslations();
                         }
                     }
                     return success;
@@ -668,6 +670,20 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 }
             });
         }
+
+        function compileTranslations()
+        {
+            const elements = document.querySelectorAll('[data-translate]');
+            elements.forEach(element => {
+                const condition = element.getAttribute('data-translate');
+                let translation = evalTranslation(element);
+                if(element.innerHTML != translation)
+                {
+                    // console.log("new translation from '" + element.innerHTML + "' to '" + translation + "'");
+                }
+                element.innerHTML = translation;
+            });        
+        }
         
         function compileNgShow() {
             const elements = document.querySelectorAll('[ng-show]');
@@ -881,6 +897,31 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             }).join("");
         }
 
+        function evalSingleBraceValues(text)
+        {
+            if(text.length == 0)
+            {
+                return;
+            }
+
+            // Split the text using "{" and "}" as delimiters
+            var parts = text.split(/({.*?})/);
+
+            // Iterate through the parts
+            for (var i = 0; i < parts.length; i++) {
+                // Check if the part is enclosed in curly braces
+                if (parts[i].startsWith("{") && parts[i].endsWith("}")) {
+                    // Remove the braces and evaluate the expression
+                    var evaluated = eval(parts[i].substring(1, parts[i].length - 1));
+                    // Replace the evaluated expression in the original array
+                    parts[i] = evaluated;
+                }
+            }
+
+            // Join the parts back together to form the modified text
+            return parts.join("");
+        }
+
         function evalTranslation(element)
         {
             let dtr = element.getAttribute("data-translate");
@@ -889,10 +930,13 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 return;
             }
 
-            let parts = dtr.split(".");
+            let evaledBraces = evalSingleBraceValues(dtr);
+            // console.log("evaledBraces: " + evaledBraces);
+            let parts = evaledBraces.split(".");
             let tr = JSON.parse(getContentsFromFile('static/i18n/' + language + '/' + parts[0] + '.json').response);
             // console.log(tr);
-            element.innerHTML = eval("tr." + dtr);
+            // console.log("will get translation by eval tr. +'" + dtr +"'");
+            return eval("tr." + evaledBraces);
         }
 
         function getContentsFromFile(filename)
@@ -990,16 +1034,16 @@ $def with (mqtt_servers, containers, domains, item_types, items)
             switch( item.type )
             {
                 case 'ALARM':
-                    item.device = new Alarm( item.publish, item.subscribe, { main: 'ARMED_HOME' } );
+                    item.device = new Alarm( item.publish, item.subscribe, new State(["main"]) );
                     break;
                 case 'NET':
-                    item.device = new Net( item.publish, { main: 'UNAVAILABLE' } );
+                    item.device = new Net( item.publish, new State(["main"]) );
                     break;
                 case 'DOOR1':
-                    item.device = new Door1( item.publish, { main: 'UNAVAILABLE' } );
+                    item.device = new Door1( item.publish, new State(["main"]) );
                     break;
                 case 'DOOR2R':                
-                    item.device = new Door2R( item.publish, { left: 'OPEN', right: 'CLOSED', recline: 'OPEN' } );
+                    item.device = new Door2R( item.publish, new State(["left", "right", "recline"]) );
                     break;
                 case 'IPCAMERA':
                     item.device = new IPCamera( item.url );
@@ -1008,10 +1052,10 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     item.device = new IPCameraPanTilt( item.baseUrl, item.videostream, item.right, item.left, item.up, item.down, item.stop );
                     break;
                 case 'LIGHT1':
-                    item.device = new Light1( item.publish, item.subscribe, { state: 'UNAVAILABLE' } );
+                    item.device = new Light1( item.publish, item.subscribe, new State(["state"]) );
                     break;
                 case 'LIGHT2':
-                    item.device = new Light2( item.publish, item.subscribe, { left: 'ON', right: 'OFF' } );
+                    item.device = new Light2( item.publish, item.subscribe, new State(["left", "right"]) );
                     break;
                 case 'MOTIONCAMERA':
                     item.device = new MotionCamera( item.publish, item.subscribe, item.cameraId, item.videostream, 'UNAVAILABLE', 'NO_MOTION' );
@@ -1020,22 +1064,22 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                     item.device = new MotionCameraPanTilt( item.publish, item.subscribe, item.cameraId, item.videostream, 'UNAVAILABLE', 'NO_MOTION' );
                     break;
                 case 'ROLLER1':
-                    item.device = new Roller1( item.publish, { main: 'UNAVAILABLE' } );
+                    item.device = new Roller1( item.publish, new State(["main"]) );
                     break;
                 case 'ROLLER1_AUTO':
-                    item.device = new Roller1_Auto( item.publish, item.subscribe, { main: 'UNAVAILABLE', percent: -1 } );
+                    item.device = new Roller1_Auto( item.publish, item.subscribe, new State(["main", "percent"]) );
                     break;
                 case 'TEMPERATURE_HUMIDITY':
-                    item.device = new TemperatureHumidity( item.publish, { main: 'ΟΝ', temperature: 20, humidity: 18 } );
+                    item.device = new TemperatureHumidity( item.publish, new State(["main", "temperature", "humidity"]) );
                     break;
                 case 'WINDOW1':
-                    item.device = new Window1( item.publish, { main: 'UNAVAILABLE' });
+                    item.device = new Window1( item.publish, new State(["main"]));
                     break;
                 case 'WINDOW1R':
-                    item.device = new Window1R( item.publish, { main: 'UNAVAILABLE', recline: 'UNAVAILABLE' } );
+                    item.device = new Window1R( item.publish, new State(["main", "recline"]) );
                     break;
                 case 'WINDOW2R':
-                    item.device = new Window2R( item.publish, { left: 'UNAVAILABLE', right: 'UNAVAILABLE', recline: 'UNAVAILABLE' } );
+                    item.device = new Window2R( item.publish, new State(["left", "right", "recline"]) );
                     break;
                 case 'MODEM':
                     item.device = new Modem( item.publish, item.subscribe, {} );

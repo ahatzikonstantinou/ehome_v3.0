@@ -8,6 +8,12 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
     <title>eHome Setup</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <script>
+        function decodeHtmlEntities(text) {
+            var textarea = document.createElement("textarea");
+            textarea.innerHTML = text;
+            return textarea.value;
+        }
+
         var items = [
                 $for item in items:
                     { 
@@ -34,7 +40,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                 commands: [
                     $for c in ri["commands"]:
                     {
-                        name: "$c['name']",
+                        name: decodeHtmlEntities("$c['name']"),
                         pulses_exact: [
                             $for e in c['pulses_exact']:
                                 "$e",
@@ -46,7 +52,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                 states: [
                     $for s in ri["states"]:
                     {
-                        name: "$s['name']",
+                        name: decodeHtmlEntities("$s['name']"),
                         pulses_exact: [
                             $for e in s['pulses_exact']:
                                 "$e",
@@ -571,7 +577,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <button id="rflink-commands-cancel-btn" hidden>Cancel</button>
                     </div>
                 </form>
-                <note>Note that state names are case sensitive, which means that when a state is detected the relevant mqtt message that will be transmitted will be <code>{"state" : "state_name"}</code></note>
+                <note>Note that state names are case sensitive, which means that when a state is detected the relevant mqtt message that will be transmitted will be <code>state_name</code></note>
                 <form id="rflink_item_state_form" action="/rflink_item/state/create" method="post">
                     <div class="form-group">
                         <label>States:</label>
@@ -809,7 +815,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <label for="serial_port">Serial Port:</label>
                         <select id="serial_port" name="serial_port" required>
                         $for s in serial_ports:
-                            <option value="$s.name">$s.name</option>
+                            <option value="$s">$s</option>
                         </select>
                         <label for="activateRFLink">Activate</label>
                         <input type="checkbox" id="activateRFLink" ${"checked" if rflink["connected"] else ""}>                    
