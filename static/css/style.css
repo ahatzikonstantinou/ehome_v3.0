@@ -238,11 +238,28 @@ input[type="password"] {
     width: 100%;
 }
 
+.rflink #rflink-item-state-exact-pulse,
+.rflink #rflink-item-state-shift-pulse {
+    width: 100%; /* Set width for the table */
+    table-layout: fixed; /* Ensure table layout is fixed */
+    border-collapse: collapse; /* Collapse borders */
+}
+
 .rflink #rflink-item-state-exact-pulse td.sequence,
 .rflink #rflink-item-state-shift-pulse td.sequence {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.rflink #rflink-item-state-exact-pulse th.count,
+.rflink #rflink-item-state-shift-pulse th.count {
+    width: 5%;
+}
+
+.rflink #rflink-item-state-exact-pulse th.action,
+.rflink #rflink-item-state-shift-pulse th.action {
+    width: 14%;
 }
 
 /*these are the styles for the modal test-result dialog*/

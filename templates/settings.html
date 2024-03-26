@@ -577,7 +577,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <button id="rflink-commands-cancel-btn" hidden>Cancel</button>
                     </div>
                 </form>
-                <note>Note that state names are case sensitive, which means that when a state is detected the relevant mqtt message that will be transmitted will be <code>state_name</code></note>
+                <note>Note that states are case sensitive, which means that when a state is detected the relevant mqtt message that will be transmitted will be <code>state</code></note>
                 <form id="rflink_item_state_form" action="/rflink_item/state/create" method="post">
                     <div class="form-group">
                         <label>States:</label>
@@ -596,10 +596,10 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     <tr>
                         <th onclick="sortTable(0)">MQTT Server</th>
                         <th onclick="sortTable(1)">Name</th>
-                        <th>Mqtt State Publish Topic</th>
-                        <th>Mqtt Command Subscribe Topic</th>
-                        <th>Commands</th>
-                        <th>States</th>
+                        <th hidden>Mqtt State Publish Topic</th>
+                        <th hidden>Mqtt Command Subscribe Topic</th>
+                        <th hidden>Commands</th>
+                        <th hidden>States</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -608,10 +608,10 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <tr>
                             <td>$(mqtt_servers[int(item['mqtt_server'])]['address'] + ":" + mqtt_servers[int(item['mqtt_server'])]['port'])</td>
                             <td>$item["name"]</td>
-                            <td>${item["mqtt_state_publish_topic"]}</td>
-                            <td>${item["mqtt_command_subscribe_topic"]}</td>
-                            <td>${', '.join([c["name"] for c in item["commands"]])}</td>
-                            <td>${', '.join([s["name"] for s in item["states"]])}</td>
+                            <td hidden>${item["mqtt_state_publish_topic"]}</td>
+                            <td hidden>${item["mqtt_command_subscribe_topic"]}</td>
+                            <td hidden>${', '.join([c["name"] for c in item["commands"]])}</td>
+                            <td hidden>${', '.join([s["name"] for s in item["states"]])}</td>
                             <td>
                                 <button onclick="populateRflinkItemForm(${loop.index0})">Update</button>
                                 <form action="/rflink_item/delete/$(loop.index0)" method="post">
@@ -807,7 +807,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                 populateRflinkItemForm($rflink_item_index)
            </script>
         </div>
-        <div id="rflink_pulses" $("hidden" if not showSection.endswith("pulses") and showSection != "rflink" else "")>
+        <div id="rflink_pulses">
             <H4>Pulses ($("Connected" if rflink["connected"] else "Disconnected"))</H4>
             <p>$rflink["error"]</p>
             <form id="rfLinkConnectForm" action="/rflink/activate" method="post">
@@ -881,8 +881,9 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     <h4>Exact Comparison Pulse Sequences</h4>
                     <table id="rflink-item-command-exact-pulse">
                         <thead>
-                            <th>Count</th>
+                            <th class="count">Count</th>
                             <th>Sequence</th>
+                            <th class="action"></th>
                         </thead>
                         <tbody>
                         </tbody>
@@ -895,8 +896,9 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     </h4>
                     <table id="rflink-item-state-exact-pulse">
                         <thead>
-                            <th>Count</th>
+                            <th class="count">Count</th>
                             <th>Sequence</th>
+                            <th class="action"></th>
                         </thead>
                         <tbody>
                         </tbody>
@@ -904,9 +906,9 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                     <h4>Shift Comparison Pulse Sequences</h4>
                     <table id="rflink-item-state-shift-pulse">
                         <thead>
-                            <th>Count</th>
+                            <th class="count">Count</th>
                             <th>Sequence</th>
-                            <th></th>
+                            <th class="action"></th>
                         </thead>
                         <tbody>
                         </tbody>
@@ -1357,8 +1359,8 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                             cellCount.textContent = p.length;
                             row.appendChild(cellCount);
                             const cellSequence = document.createElement('td');
-                            cellSequence.className = "sequence";
                             cellSequence.textContent = p;
+                            cellSequence.className = "sequence";
                             row.appendChild(cellSequence);
                             const cellActions = document.createElement('td');
                             var deleteBtn = document.createElement('button');
@@ -1386,8 +1388,8 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                             cellCount.textContent = p.length;
                             row.appendChild(cellCount);
                             const cellSequence = document.createElement('td');
-                            cellSequence.className = "sequence";
                             cellSequence.textContent = p;
+                            cellSequence.className = "sequence";
                             row.appendChild(cellSequence);
                             const cellActions = document.createElement('td');
                             var deleteBtn = document.createElement('button');
@@ -1415,8 +1417,8 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                             cellCount.textContent = p.length;
                             row.appendChild(cellCount);
                             const cellSequence = document.createElement('td');
-                            cellSequence.className = "sequence";
                             cellSequence.textContent = p;
+                            cellSequence.className = "sequence";
                             row.appendChild(cellSequence);
                             const cellActions = document.createElement('td');
                             var deleteBtn = document.createElement('button');
