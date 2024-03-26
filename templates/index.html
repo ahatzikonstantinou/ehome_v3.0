@@ -1,4 +1,5 @@
-$def with (mqtt_servers, containers, domains, item_types, items)
+$def with (mqtt_servers, containers, domains, item_types, items, language)
+$var language = language
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -244,8 +245,6 @@ $def with (mqtt_servers, containers, domains, item_types, items)
                 ]
             }                
         ];
-
-        var language = 'el';
 
         // Observe changes in variables and recompile directives accordingly
         var containers = [];

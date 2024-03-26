@@ -12,6 +12,7 @@ import queue
 import signal
 import subprocess   #to get paho-mqtt version
 from packaging import version #to compare paho-mqtt version
+from datetime import datetime # for mqtt message timestamp
 
 
 urls = (
@@ -56,7 +57,8 @@ urls = (
     '/rflink_item/(\d+)/state/(\d+)/shift-window-size/(\d+)', 'RFLinkItemStateShiftWindowSize',
     '/rflink_item/(\d+)/state/(\d+)/use-max-common-substring/(\d+)', 'RFLinkItemStateUseMaxCommonSubstring',
     '/rflink_item/(\d+)/state/(\d+)/pulse-middle', 'RFLinkItemStatePulseMiddle',
-    '/rflink_item/test', 'RFLinkItemTest'
+    '/rflink_item/test', 'RFLinkItemTest',
+    '/language', 'SetLanguage'
 )
 
 # Create a directory named 'data' if it doesn't exist
@@ -103,6 +105,15 @@ if os.path.exists(rflink_file_path):
 else:
     rflink_settings = {"activated": False, "debug": False, "serial_port": "COM1", "items": []}
 
+# File path for settings.json
+settings_file_path = os.path.join('data', 'settings.json')
+
+# Load settings from JSON file or create an empty list if file doesn't exist
+if os.path.exists(settings_file_path):
+    with open(settings_file_path, 'r') as f:
+        settings = json.load(f)
+else:
+    settings = {"language": "el"}
 
 domains = ["LIGHT", "DOOR", "WINDOW", "CLIMATE", "CAMERA"]
 
@@ -130,7 +141,8 @@ item_types = [
     { "id":"WATERTANK", "description": "Water tank"},
 ]
  
-render = web.template.render('templates/')
+render = web.template.render('templates/', base='menu')
+# render = web.template.render('templates/')
 
 rflink = None
 # For some unknown reason rflink is initialized twice
@@ -160,6 +172,9 @@ use_paho_client_constructor_arg = version.parse(paho_mqtt_version) >= version.pa
 print(f"paho_mqtt_version: {paho_mqtt_version} (:{version.parse(paho_mqtt_version)}), break_paho_mqtt_version:{break_paho_mqtt_version} (:{version.parse(break_paho_mqtt_version)}), use_paho_client_constructor_arg: {use_paho_client_constructor_arg}")
 
 def publish_mqtt(server, topic, data):
+    timestamp = datetime.now()
+    formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    data = f"{{{data} , \"timestamp\" : \"{formatted_timestamp}\"}}"
     try:
         client = None
         if use_paho_client_constructor_arg:
@@ -167,7 +182,7 @@ def publish_mqtt(server, topic, data):
         else:
             client = mqtt.Client()
         client.connect(host=server['address'], port=int(server['port']))
-        client.publish(topic, data)
+        client.publish(topic, data, retain=True)
         client.disconnect()
         print(f"Published topic: {topic}, message: {data}, successfully to {server['address']}")
     except Exception as e:
@@ -237,7 +252,7 @@ messenger = Messenger()
 
 class Index:
     def GET(self):
-        return render.index(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items)
+        return render.index(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items, language=settings["language"])
 
 class Settings:
     def GET(self):
@@ -856,6 +871,16 @@ class RFLinkItemTest:
             messenger.SendStates(rflink.detectStates(l))
 
         return json.dumps(results, indent=4)
+
+class SetLanguage:
+    def POST(self):
+        settings["language"] = web.input().get("language")
+        submitted_from_url = web.ctx.path
+        print(f"submitted_from_url: {submitted_from_url}")
+        with open(settings_file_path, 'w') as f:
+            json.dump(settings, f, indent=4)
+        return json.dumps({"success": True})
+
 
 app = web.application(urls, globals())
 

@@ -1,0 +1,65 @@
+/* CSS styles */
+.menu {
+    background-color: #f2f2f2;
+    margin-bottom: 4px;
+}
+.menu-items {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center; /* Align items vertically center */
+}
+
+.menu-item-left,
+.menu-item-right {
+    display: inline-block;
+}
+
+.menu-button {
+    display: inline-block;
+    padding: 6px 8px;
+    text-decoration: none;
+    color: #333;
+}
+
+.menu-button:hover {
+    background-color: #ddd;
+}
+
+.menu-item-right {
+    margin-left: auto; /* Pushes the "Language" dropdown to the right */
+}
+
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    z-index: 1;
+}
+
+.dropdown-content select {
+    width: 100%;
+    padding: 8px 12px;
+    border: none; /* Remove border */
+    border-radius: 4px;
+    background-color: #f2f2f2;
+}
+
+.dropdown-content select:hover {
+    background-color: #ddd;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropbtn {
+    background-color: #ddd;
+}

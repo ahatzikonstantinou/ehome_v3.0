@@ -74,6 +74,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
     </script>
 </head>
 <body>
+    <include src="menu.html"></include>
     <button onclick="toggleContent('mqtt_servers', true);toggleContent('containers', false);toggleContent('items', false);toggleContent('rflink', false);">MQTT Servers</button>
     <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', true);toggleContent('items', false);toggleContent('rflink', false);">Containers</button>
     <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', false);toggleContent('items', true);toggleContent('rflink', false);">Items</button>
@@ -577,7 +578,7 @@ $def with (mqtt_servers, containers, domains, item_types, items, serial_ports, r
                         <button id="rflink-commands-cancel-btn" hidden>Cancel</button>
                     </div>
                 </form>
-                <note>Note that states are case sensitive, which means that when a state is detected the relevant mqtt message that will be transmitted will be <code>state</code></note>
+                <note>Note that states are case sensitive. Curly brackets and a timestamp will be automatically added. So when a state is detected the relevant mqtt message that will be transmitted will be <code>{#state#, "timestamp": "1972-01-01 23:18:59"</code>. </note>
                 <form id="rflink_item_state_form" action="/rflink_item/state/create" method="post">
                     <div class="form-group">
                         <label>States:</label>

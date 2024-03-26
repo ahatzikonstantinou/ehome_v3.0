@@ -2,42 +2,42 @@
     <div ng-if="showLabel">
         <label ng-class="{ 'house': level==1, 'floor': level==2, 'room': level>2 }" >{{c.name}}</label>
         <span class="summary" ng-if="c.containers.length == 1">({{c.containers[0].name}})</span>
-        <button ng-if="c.containers.length > 0 || c.items.length > 0" type="button" class="btn btn-xs" ng-class="{ 'btn-default': level == 1, 'btn-link': level > 1 }" ng-click="c.gui.collapsed = !c.gui.collapsed">
+        <button ng-if="c.containers.length > 0 || c.items.length > 0" type="button" class="btn btn-xs expand" ng-class="{ 'btn-default': level == 1, 'btn-link': level > 1 }" ng-click="c.gui.collapsed = !c.gui.collapsed">
             <span ng-class="{ 'mdi mdi-chevron-down': level == 1, 'glyphicon glyphicon-triangle-bottom': level > 1}" ng-show="!c.gui.collapsed"></span>
             <span ng-class="{ 'mdi mdi-chevron-up': level == 1, 'glyphicon glyphicon-triangle-top': level > 1}" ng-show="c.gui.collapsed"></span>
         </button>
-        <button ng-if="level == 1 && ( c.containers.length > 0 || c.items.length > 0 )" type="button" class="btn btn-default btn-xs" ng-click="c.gui.allChildrenExpanded = !c.gui.allChildrenExpanded; c.expandAllChildren( !c.gui.allChildrenExpanded )">
+        <button ng-if="level == 1 && ( c.containers.length > 0 || c.items.length > 0 )" type="button" class="btn btn-default btn-xs expand" ng-click="c.gui.allChildrenExpanded = !c.gui.allChildrenExpanded; c.expandAllChildren( !c.gui.allChildrenExpanded )">
             <span class="mdi mdi-chevron-double-down" ng-show="!c.gui.allChildrenExpanded"></span>
             <span class="mdi mdi-chevron-double-up" ng-show="c.gui.allChildrenExpanded"></span>
         </button>
     </div>    
     <div ng-if="level==1">
         <div class="filters-bar">
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.DOOR, 'btn-primary': c.gui.filter.DOOR }" ng-click="c.gui.filter.DOOR = !c.gui.filter.DOOR">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.DOOR, 'btn-primary': c.gui.filter.DOOR }" ng-click="c.gui.filter.DOOR = !c.gui.filter.DOOR">
                 <span class="mdi mdi-door"/>
             </button>
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.WINDOW, 'btn-primary': c.gui.filter.WINDOW }" ng-click="c.gui.filter.WINDOW = !c.gui.filter.WINDOW">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.WINDOW, 'btn-primary': c.gui.filter.WINDOW }" ng-click="c.gui.filter.WINDOW = !c.gui.filter.WINDOW">
                 <span class="mdi mdi-window-closed-variant"/>
             </button>
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.LIGHT, 'btn-primary': c.gui.filter.LIGHT }" ng-click="c.gui.filter.LIGHT = !c.gui.filter.LIGHT">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.LIGHT, 'btn-primary': c.gui.filter.LIGHT }" ng-click="c.gui.filter.LIGHT = !c.gui.filter.LIGHT">
                 <span class="mdi mdi-lightbulb"/>
             </button>
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.CLIMATE, 'btn-primary': c.gui.filter.CLIMATE }" ng-click="c.gui.filter.CLIMATE = !c.gui.filter.CLIMATE">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.CLIMATE, 'btn-primary': c.gui.filter.CLIMATE }" ng-click="c.gui.filter.CLIMATE = !c.gui.filter.CLIMATE">
                 <span class="mdi mdi-thermometer"/>
             </button>
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.COVER, 'btn-primary': c.gui.filter.COVER }" ng-click="c.gui.filter.COVER = !c.gui.filter.COVER">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.COVER, 'btn-primary': c.gui.filter.COVER }" ng-click="c.gui.filter.COVER = !c.gui.filter.COVER">
                 <span class="mdi mdi-blinds"/>
             </button>
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.ALARM, 'btn-primary': c.gui.filter.ALARM }" ng-click="c.gui.filter.ALARM = !c.gui.filter.ALARM">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.ALARM, 'btn-primary': c.gui.filter.ALARM }" ng-click="c.gui.filter.ALARM = !c.gui.filter.ALARM">
                 <span class="mdi mdi-shield-home"/>
             </button>
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.CAMERA, 'btn-primary': c.gui.filter.CAMERA }" ng-click="c.gui.filter.CAMERA = !c.gui.filter.CAMERA">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.CAMERA, 'btn-primary': c.gui.filter.CAMERA }" ng-click="c.gui.filter.CAMERA = !c.gui.filter.CAMERA">
                 <span class="mdi mdi-cctv"/>
             </button>        
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.MOTION, 'btn-primary': c.gui.filter.MOTION }" ng-click="c.gui.filter.MOTION = !c.gui.filter.MOTION">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.MOTION, 'btn-primary': c.gui.filter.MOTION }" ng-click="c.gui.filter.MOTION = !c.gui.filter.MOTION">
                 <span class="mdi mdi-transition"/>
             </button>        
-            <button type="button" class="btn btn-xs" ng-class="{ 'btn-default': !c.gui.filter.TANK, 'btn-primary': c.gui.filter.TANK }" ng-click="c.gui.filter.TANK = !c.gui.filter.TANK">
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.TANK, 'btn-primary': c.gui.filter.TANK }" ng-click="c.gui.filter.TANK = !c.gui.filter.TANK">
                 <span class="mdi mdi-storage-tank"/>
             </button>        
 

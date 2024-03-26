@@ -1,0 +1,65 @@
+$def with (content)
+$ language = content.language
+<html>
+<head>
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/static/css/menu.css">
+    <script>
+        var language = "$content.language"
+        function submitForm() {
+            var languageForm = document.getElementById("languageForm");
+            var formData = new FormData(languageForm);
+
+            fetch("language", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Refresh the page
+                } else {
+                    console.error("Language change failed");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+
+        window.onload = function() {
+            alert("language: ", language);
+        }
+    </script>
+</head>
+<body>
+<!-- menu.html -->
+<nav class="menu">
+    <ul class="menu-items">
+        <li class="menu-item-left">
+            <a href="index" class="menu-button"><i class="mdi mdi-home"></i> Home</a>
+        </li>
+        <li class="menu-item-left">
+            <a href="settings" class="menu-button"><i class="mdi mdi-cog"></i> Settings</a>
+        </li>
+        <li class="menu-item-right">
+            <div class="dropdown">
+                <a href="#" class="menu-button dropbtn"><i class="mdi mdi-flag"></i>Language</a>
+                <div class="dropdown-content">
+                    <form id="languageForm" action="language" method="post">
+                        <select name="language" onchange="submitForm()">
+                            <option value="en" $('selected' if language == 'en' else '')>English</option>
+                            <option value="el" $('selected' if language == 'el' else '')>Ελληνικά</option>
+                            <!-- Add more language options as needed -->
+                        </select>
+                    </form>
+                </div>
+            </div>
+        </li>
+    </ul>
+</nav>
+<div>
+$:content
+</div>
+</body>
+</html>
