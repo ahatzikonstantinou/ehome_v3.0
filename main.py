@@ -252,7 +252,13 @@ messenger = Messenger()
 
 class Index:
     def GET(self):
-        return render.index(mqtt_servers=mqtt_servers, containers=containers, domains=domains, item_types=item_types, items=items, language=settings["language"])
+        return render.index(
+            mqtt_servers=mqtt_servers, 
+            containers=containers, 
+            domains=domains, 
+            item_types=item_types, 
+            items=items, 
+            language=settings["language"])
 
 class Settings:
     def GET(self):
@@ -273,7 +279,8 @@ class Settings:
             serial_ports = serial_ports, 
             rflink = { "connected" : get_rflink().connected, "error" : get_rflink().connection_error, "debug": rflink_settings["debug"] }, 
             rflink_items = rflink_settings["items"], 
-            rflink_item_index = data.rflink_item_index,
+            rflink_item_index = data.rflink_item_index, 
+            language=settings["language"],
             showSection=data.showSection)
 
 class CreateMqttServer:

@@ -25,11 +25,7 @@ $ language = content.language
             .catch(error => {
                 console.error("Error:", error);
             });
-        }
-
-        window.onload = function() {
-            alert("language: ", language);
-        }
+        }        
     </script>
 </head>
 <body>
@@ -42,7 +38,7 @@ $ language = content.language
         <li class="menu-item-left">
             <a href="settings" class="menu-button"><i class="mdi mdi-cog"></i> Settings</a>
         </li>
-        <li class="menu-item-right">
+        <li class="menu-item-right $('' if content.page == 'index' else 'display-none')">
             <div class="dropdown">
                 <a href="#" class="menu-button dropbtn"><i class="mdi mdi-flag"></i>Language</a>
                 <div class="dropdown-content">

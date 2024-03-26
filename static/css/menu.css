@@ -25,6 +25,7 @@
 
 .menu-button:hover {
     background-color: #ddd;
+    text-decoration: none;
 }
 
 .menu-item-right {
@@ -62,4 +63,9 @@
 
 .dropdown:hover .dropbtn {
     background-color: #ddd;
+}
+
+/*used to hide the language dropdown in the settings page*/
+.display-none {
+    display: none;
 }
