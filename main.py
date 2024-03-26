@@ -122,7 +122,7 @@ item_types = [
     { "id":"SMS", "description": "Sms" },
     { "id":"MODEM", "description": "Modem"}, 
     { "id":"DOOR1", "description": "Door single"}, 
-    { "id":"DOOR1", "description": "Door reclining single"}, 
+    { "id":"DOOR1R", "description": "Door reclining single"}, 
     { "id":"DOOR2R", "description": "Door reclining double"}, 
     { "id":"WINDOW1", "description": "Window single"},
     { "id":"WINDOW1R", "description": "Window reclining single"}, 
