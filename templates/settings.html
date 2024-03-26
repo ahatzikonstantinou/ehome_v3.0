@@ -563,6 +563,27 @@ $var language = language #so that it is available for menu.html base template
                     <input type="text" id="rflink_item_mqtt_command_subscribe_topic" name="mqtt_command_subscribe_topic">
                 </div>                
                 <button id="createRflinkItemBtn" type="submit">Create Item</button>
+                <button id="fromRflinkItemBtn" onclick="populateRflinkItemFromItem(event)">From</button>
+                <select id="itemsToCopyRFlinkFrom">
+                $if items:
+                    $for item in items:
+                        $code:
+                            def getParent(containerGuid, delimit):
+                                if not containerGuid:
+                                    return ""
+                                containerList = list(c for c in containers if c['guid'] == containerGuid)
+                                if len(containerList) == 0:
+                                    return "Container '" + containerGuid + "' not Found"
+                                container = containerList[0]
+                                if container['parentContainer']:
+                                    return getParent(container['parentContainer'], delimit) + delimit + container['containerName']
+                                else:
+                                    return container['containerName']
+                        <option value="$loop.index0">$getParent(item['itemContainer'], " - ") - $item['itemName']</option>
+                $else:
+                    <option value="">No items found.</option>
+                </select>
+
                 <button id ="cancelRflinkItemBtn" type="button" hidden onclick="location.reload()">Cancel</button>
             </form>
 
@@ -637,6 +658,47 @@ $var language = language #so that it is available for menu.html base template
                 var inputStates = document.getElementById('rflink_item_state');
                 var commandsDiv = document.getElementById('rflink-commands');
                 var statesDiv = document.getElementById('rflink-states');
+                var itemsToCopyRFlinkFromSelect = document.getElementById('itemsToCopyRFlinkFrom');
+
+                function getParent(containerGuid, delimit) {
+                    if (!containerGuid) {
+                        return "";
+                    }
+                    
+                    var containerList = containers.filter(function(c) {
+                        return c.guid === containerGuid;
+                    });
+                    
+                    if (containerList.length === 0) {
+                        return "Container '" + containerGuid + "' not Found";
+                    }
+                    
+                    var container = containerList[0];
+                    
+                    if (container.parentContainer) {
+                        return getParent(container.parentContainer, delimit) + delimit + container.containerName;
+                    } else {
+                        return container.containerName;
+                    }
+                }
+
+                function populateRflinkItemFromItem(event)
+                {
+                    // Prevent form submission
+                    event.preventDefault();
+
+                    if(itemsToCopyRFlinkFromSelect.value == "")
+                    {
+                        return;
+                    }
+                    let item = items[Number(itemsToCopyRFlinkFromSelect.value)];
+                    console.log("Will populate rflink item from: ", item);
+
+                    document.getElementById("rflink_item_mqtt_server").value = item.itemMqttServer;
+                    document.getElementById("rflink_item_name").value = getParent(item.itemContainer, " - ") + " - " + item.itemName;
+                    document.getElementById("rflink_item_mqtt_state_publish_topic").value = item.publish;
+                    document.getElementById("rflink_item_mqtt_command_subscribe_topic").value = item.subscribe;
+                }
 
                 // Function to create a span with "x" button
                 function createSpan(text, type, id, item_id) {

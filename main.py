@@ -208,10 +208,11 @@ class Messenger:
         thread.start()
 
     def SendData(self):
+        # Causes the program to hang, needs fixing
         print("Set to send data.")
-        thread = threading.Thread(target=self.publish_settings_thread)
-        thread.daemon = True  # Daemonize the thread so it exits when the main program exits
-        thread.start()
+        # thread = threading.Thread(target=self.publish_settings_thread)
+        # thread.daemon = True  # Daemonize the thread so it exits when the main program exits
+        # thread.start()
     
     def SendStates(self, detectedStates):
         self.queue.put(detectedStates)
@@ -591,7 +592,8 @@ class RFLinkItemCreate:
 
         with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
-        raise web.seeother('/settings?showSection=rflink,item')
+        raise web.seeother('/settings?rflink_item_index=' + str(len(rflink_settings["items"])) + '&showSection=rflink,item')
+        #raise web.seeother('/settings?showSection=rflink,item')
 
 class RFLinkItemUpdate:
     def POST(self, item_id):
