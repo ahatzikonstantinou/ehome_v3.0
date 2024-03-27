@@ -947,8 +947,8 @@ $var language = language #so that it is available for menu.html base template
             // console.log("evaledBraces: " + evaledBraces);
             let parts = evaledBraces.split(".");
             let tr = JSON.parse(getContentsFromFile('static/i18n/' + language + '/' + parts[0] + '.json').response);
-            console.log(tr);
-            console.log("will get translation by eval tr. +'" + dtr +"'");
+            // console.log(tr);
+            // console.log("will get translation by eval tr. +'" + dtr +"'");
             return eval("tr." + evaledBraces);
         }
 

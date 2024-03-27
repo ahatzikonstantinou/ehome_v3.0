@@ -11,11 +11,11 @@
         </div>
         <div class="state-container">
             <span class="state" ng-if="i.device.state.main == 'ARMING' || i.device.state.main == 'TRIGGERED'"
-                ng-class="{ 'unarmed': i.device.state.main == 'UNARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED'  }">
+                ng-class="{ 'disarmed': i.device.state.main == 'DISARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED'  }">
                     {{i.device.state.countdown}}
             </span>
             <span class="state"
-                ng-class="{ 'unarmed': i.device.state.main == 'UNARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }"
+                ng-class="{ 'disarmed': i.device.state.main == 'DISARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }"
                 data-translate="home.alarm.{i.device.state.main}">
                     {{i.device.state.main}} 
             </span>

@@ -53,7 +53,7 @@ var Alarm = (function() {
     Alarm.prototype.armHome = function()
     {
         console.log( 'alarm will send a arm_home command' );
-        if( 'UNARMED' == this.state.main && this.publisher )
+        if( 'DISARMED' == this.state.main && this.publisher )
         {
             var message = new Paho.Message( 'ARM_HOME' );
             message.destinationName = this.mqtt_publish_topic ;
@@ -65,7 +65,7 @@ var Alarm = (function() {
     Alarm.prototype.armAway = function()
     {
         console.log( 'alarm will send a arm_away command' );
-        if( 'UNARMED' == this.state.main && this.publisher )
+        if( 'DISARMED' == this.state.main && this.publisher )
         {
             var message = new Paho.Message( 'ARM_AWAY' );
             message.destinationName = this.mqtt_publish_topic ;

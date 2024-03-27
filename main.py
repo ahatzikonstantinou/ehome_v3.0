@@ -138,6 +138,7 @@ item_types = [
     { "id":"MOTIONCAMERAPANTILT", "description": "Motion Camera pan-tilt"}, 
     { "id":"IPCAMERA", "description": "IP Camera"}, 
     { "id":"MOTIONCAMERA", "description": "Motion Camera"},
+    { "id":"MOTIONSENSOR", "description": "Motion sensor"},
     { "id":"WATERTANK", "description": "Water tank"},
 ]
  
@@ -275,7 +276,7 @@ class Settings:
             mqtt_servers=mqtt_servers, 
             containers=containers, 
             domains=domains, 
-            item_types=item_types, 
+            item_types=sorted(item_types, key=lambda x: x["description"]), 
             items=items, 
             serial_ports = serial_ports, 
             rflink = { "connected" : get_rflink().connected, "error" : get_rflink().connection_error, "debug": rflink_settings["debug"] }, 
