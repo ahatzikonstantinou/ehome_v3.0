@@ -711,7 +711,11 @@ class RFLinkItemCommandAddExact:
                 if len(l.strip()) == 0:
                     print(f"Empty line")
                     continue
-                command['pulses_exact'].append(get_rflink().processRawPulseLine(command['pulse_middle'], l))
+                pulse = get_rflink().processRawPulseLine(command['pulse_middle'], l)
+                if pulse not in command['pulses_exact']:
+                    command['pulses_exact'].append(pulse)
+                else:
+                    print(f"Pulse already in command {pulse}")
                 
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
@@ -733,7 +737,11 @@ class RFLinkItemStateAddExact:
                 if len(l.strip()) == 0:
                     print(f"Empty line")
                     continue
-                state['pulses_exact'].append(get_rflink().processRawPulseLine(state['pulse_middle'], l))
+                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l)
+                if pulse not in state['pulses_exact']:
+                    state['pulses_exact'].append(pulse)
+                else:
+                    print(f"Pulse already in state exact {pulse}")
                 
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
@@ -757,7 +765,12 @@ class RFLinkItemStateAddShift:
                     continue
                 if RFLink.RAW_PULSE_PATTERN not in l:   # silently reject non raw-pulse lines
                     continue
-                state['pulses_shift'].append(get_rflink().processRawPulseLine(state['pulse_middle'], l))
+                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l)
+                if pulse not in state['pulses_shift']:
+                    state['pulses_shift'].append(pulse)
+                else:
+                    print(f"Pulse already in state shift {pulse}")
+                    continue
             state["max_common_substring"] = get_rflink().getMaxCommonSubstring(state['pulses_shift'])   
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
