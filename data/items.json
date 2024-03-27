@@ -1,0 +1,82 @@
+[
+    {
+        "itemName": "\u03a0\u03b1\u03c1\u03ac\u03b8\u03c5\u03c1\u03bf",
+        "itemMqttServer": "0",
+        "itemContainer": "2f72274a-e575-421d-b5ed-77c97dd49a54",
+        "itemType": "WINDOW1",
+        "publish": "E/4/A/O/W/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "\u03a0\u03cc\u03c1\u03c4\u03b1",
+        "itemMqttServer": "0",
+        "itemContainer": "0dbd1b4b-bc24-4a3a-ab52-c5337bf07662",
+        "itemType": "DOOR1",
+        "publish": "E/4/A/B/D/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "\u03a0\u03b1\u03c1\u03ac\u03b8\u03c5\u03c1\u03bf",
+        "itemMqttServer": 0,
+        "itemContainer": "2c40f34e-a1d8-4ccf-a19c-679f2d213540",
+        "itemType": "WINDOW1",
+        "publish": "E/4/A/K/W/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "\u03a0\u03cc\u03c1\u03c4\u03b1",
+        "itemMqttServer": 0,
+        "itemContainer": "2c40f34e-a1d8-4ccf-a19c-679f2d213540",
+        "itemType": "DOOR1",
+        "publish": "E/4/A/K/D/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "\u03a0\u03cc\u03c1\u03c4\u03b1",
+        "itemMqttServer": 0,
+        "itemContainer": "15dc80be-6e6c-4908-bd32-f94186204b93",
+        "itemType": "DOOR1",
+        "publish": "E/4/A/\u0397/D/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "\u03a0\u03cc\u03c1\u03c4\u03b1",
+        "itemMqttServer": 0,
+        "itemContainer": "ba638a95-1c40-46a2-abf6-6f2236dac7d3",
+        "itemType": "DOOR1",
+        "publish": "E/4/A/L/D/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "\u03a0\u03b1\u03c1\u03ac\u03b8\u03c5\u03c1\u03bf",
+        "itemMqttServer": 0,
+        "itemContainer": "ba638a95-1c40-46a2-abf6-6f2236dac7d3",
+        "itemType": "WINDOW1",
+        "publish": "E/4/A/L/W/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    },
+    {
+        "itemName": "PIR",
+        "itemMqttServer": 0,
+        "itemContainer": "2f72274a-e575-421d-b5ed-77c97dd49a54",
+        "itemType": "MOTIONSENSOR",
+        "publish": "E/4/A/O/P/state",
+        "subscribe": "",
+        "filterById": false,
+        "idFilterValue": ""
+    }
+]

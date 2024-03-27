@@ -217,7 +217,7 @@ class Messenger:
     
     def SendStates(self, detectedStates):
         self.queue.put(detectedStates)
-        print("Set to send states.")
+        print("Set to send states")
 
 
     def publish_state_thread(self):
@@ -575,7 +575,7 @@ class RFLinkItemCreate:
     def POST(self):
         data = web.input()
         print(f"rflink_item: {json.dumps(data, indent=4)}")
-        # guid = str(uuid.uuid4())
+        guid = str(uuid.uuid4())
         rflink_item_name = data.get("name")
         rflink_item_mqtt_server = data.get("mqtt_server")
         rflink_item_mqtt_state_publish_topic = data.get("mqtt_state_publish_topic")
@@ -583,6 +583,7 @@ class RFLinkItemCreate:
         rflink_item_commands = []
         rflink_item_states = []
         rflink_settings["items"].append({
+            "guid": guid,
             "name": rflink_item_name,
             "mqtt_server": rflink_item_mqtt_server,
             "mqtt_state_publish_topic": rflink_item_mqtt_state_publish_topic,

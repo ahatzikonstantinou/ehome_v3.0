@@ -276,7 +276,10 @@ class RFLink:
         for rflink_item_index, value in results.items():
             rflink_item = self.rflink_settings["items"][rflink_item_index]
             for s in results[rflink_item_index]["states"]:
-                detectedStates.append(DetectedState(rflink_item, s["name"]))
+                if not any(ds.rflink_item["guid"] == rflink_item["guid"] and ds.state_name == s["name"] for ds in detectedStates):
+                    detectedStates.append(DetectedState(rflink_item, s["name"]))
+                else:
+                    print(f"rflink_item: {rflink_item['mqtt_state_publish_topic']}, state: {s['name']} already in the list of detected states")
         
         print(f"Returning {len(detectedStates)} detected states")
         return detectedStates
