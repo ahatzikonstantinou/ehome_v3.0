@@ -1,5 +1,9 @@
 <div >
     <div ng-if="showLabel">
+        <button ng-if="level==1" style="float:right;" type="button" class="btn btn-sm" ng-class="{ 'btn-default': !c.gui.showMqttTopics, 'btn-primary': c.gui.showMqttTopics }" ng-click="c.gui.showMqttTopics = !c.gui.showMqttTopics">
+            <span class="glyphicon glyphicon-info-sign"/>
+            <!--<span class="glyphicon glyphicon-eye-open"/>-->
+        </button>
         <label ng-class="{ 'house': level==1, 'floor': level==2, 'room': level>2 }" >{{c.name}}</label>
         <span class="summary" ng-if="c.containers.length == 1">({{c.containers[0].name}})</span>
         <button ng-if="c.containers.length > 0 || c.items.length > 0" type="button" class="btn btn-xs expand" ng-class="{ 'btn-default': level == 1, 'btn-link': level > 1 }" ng-click="c.gui.collapsed = !c.gui.collapsed">
@@ -35,7 +39,7 @@
                 <span class="mdi mdi-cctv"/>
             </button>        
             <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.MOTION, 'btn-primary': c.gui.filter.MOTION }" ng-click="c.gui.filter.MOTION = !c.gui.filter.MOTION">
-                <span class="mdi mdi-transition"/>
+                <span class="mdi mdi-motion-sensor"/>
             </button>        
             <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.TANK, 'btn-primary': c.gui.filter.TANK }" ng-click="c.gui.filter.TANK = !c.gui.filter.TANK">
                 <span class="mdi mdi-storage-tank"/>
@@ -48,13 +52,7 @@
                 <button type="button" class="btn btn-xs btn-link" ng-click="c.gui.filter.DOOR = c.gui.filter.WINDOW = c.gui.filter.LIGHT = c.gui.filter.CLIMATE = c.gui.filter.COVER = c.gui.filter.ALARM = c.gui.filter.CAMERA = c.gui.filter.MOTION = c.gui.filter.TANK = false">
                     <span data-translate="home.filters.none">None</span>
                 </button>
-            </span>
-
-            <button style="float:right;" type="button" class="btn btn-sm" ng-class="{ 'btn-default': !c.gui.showMqttTopics, 'btn-primary': c.gui.showMqttTopics }" ng-click="c.gui.showMqttTopics = !c.gui.showMqttTopics">
-                <span class="glyphicon glyphicon-info-sign"/>
-                <!--<span class="glyphicon glyphicon-eye-open"/>-->
-            </button>
-    
+            </span>                
 
         </div>
     </div>

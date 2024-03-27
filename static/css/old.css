@@ -602,6 +602,7 @@ label.house
 {
     font-size: 20px;
     float: right;
+    margin-right: 4px;
 }
 .house-container {
     margin: 5px;    

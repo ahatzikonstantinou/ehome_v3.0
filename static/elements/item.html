@@ -10,6 +10,7 @@
     <window2r class="item" item='i' ng-if="i.type == 'WINDOW2R' && filter.WINDOW" show-mqtt-topics="showMqttTopics" filter="filter"></window2r>
     <light1 class="item" item='i' ng-if="i.type == 'LIGHT1' && filter.LIGHT" show-mqtt-topics="showMqttTopics" filter="filter"></light1>
     <light2 class="item" item='i' ng-if="i.type == 'LIGHT2' && filter.LIGHT" show-mqtt-topics="showMqttTopics" filter="filter"></light2>
+    <motion-sensor class="item" item='i' ng-if="i.type == 'MOTIONSENSOR' && filter.MOTION" show-mqtt-topics="showMqttTopics" filter="filter"></motion-sensor>
 
     <!-- ahat note: the cameras need to know whether the house or floor or room they belong to is collapsed in order to change the img src to '#' and stop downloading the camera stream-->
     <ipcamera class="item" item='i' ng-if="i.type == 'IPCAMERA' && filter.CAMERA" show-mqtt-topics="showMqttTopics" is-collapsed-house="isCollapsedHouse" is-collapsed-floor="isCollapsedFloor" is-collapsed-room="isCollapsedRoom" filter="filter"></ipcamera>
