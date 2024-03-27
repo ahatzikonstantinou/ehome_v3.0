@@ -36,6 +36,11 @@
         "filters": {
             "all": "All",
             "none": "None"
+        },
+        "menu": {
+            "Home": "Home",
+            "Settings": "Settings",
+            "Language": "Language"
         }
     }
 }

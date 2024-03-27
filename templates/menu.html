@@ -33,14 +33,14 @@ $ language = content.language
 <nav class="menu">
     <ul class="menu-items">
         <li class="menu-item-left">
-            <a href="index" class="menu-button"><i class="mdi mdi-home"></i> Home</a>
+            <a href="index" class="menu-button"><span class="mdi mdi-home" data-translate="home.menu.Home">Home</span></a>
         </li>
         <li class="menu-item-left">
-            <a href="settings" class="menu-button"><i class="mdi mdi-cog"></i> Settings</a>
+            <a href="settings" class="menu-button"><span class="mdi mdi-cog" data-translate="home.menu.Settings">Settings</span></a>
         </li>
         <li class="menu-item-right $('' if content.page == 'index' else 'display-none')">
             <div class="dropdown">
-                <a href="#" class="menu-button dropbtn"><i class="mdi mdi-flag"></i>Language</a>
+                <a href="#" class="menu-button dropbtn"><span class="mdi mdi-flag" data-translate="home.menu.Language">Language</span></a>
                 <div class="dropdown-content">
                     <form id="languageForm" action="language" method="post">
                         <select name="language" onchange="submitForm()">
