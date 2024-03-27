@@ -102,6 +102,16 @@ rflink_file_path = os.path.join('data', 'rflink.json')
 if os.path.exists(rflink_file_path):
     with open(rflink_file_path, 'r') as f:
         rflink_settings = json.load(f)
+        #remove duplicate pulses
+        for rfi in rflink_settings["items"]:
+            for c in rfi["commands"]:
+                c["pulses_exact"] = list(set(c["pulses_exact"]))
+            for s in rfi["states"]:
+                s["pulses_exact"] = list(set(s["pulses_exact"]))
+                s["pulses_shift"] = list(set(s["pulses_shift"]))
+    with open(rflink_file_path, 'w') as f:
+            json.dump(rflink_settings, f, indent=4)
+
 else:
     rflink_settings = {"activated": False, "debug": False, "serial_port": "COM1", "items": []}
 
@@ -712,8 +722,8 @@ class RFLinkItemCommandAddExact:
                 if len(l.strip()) == 0:
                     print(f"Empty line")
                     continue
-                pulse = get_rflink().processRawPulseLine(command['pulse_middle'], l)
-                if pulse not in command['pulses_exact']:
+                pulse = get_rflink().processRawPulseLine(command['pulse_middle'], l).strip()
+                if len(pulse) > 0 and pulse not in command['pulses_exact']:
                     command['pulses_exact'].append(pulse)
                 else:
                     print(f"Pulse already in command {pulse}")
@@ -738,8 +748,8 @@ class RFLinkItemStateAddExact:
                 if len(l.strip()) == 0:
                     print(f"Empty line")
                     continue
-                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l)
-                if pulse not in state['pulses_exact']:
+                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l).strip()
+                if len(pulse) > 0 and pulse not in state['pulses_exact']:
                     state['pulses_exact'].append(pulse)
                 else:
                     print(f"Pulse already in state exact {pulse}")
@@ -766,8 +776,8 @@ class RFLinkItemStateAddShift:
                     continue
                 if RFLink.RAW_PULSE_PATTERN not in l:   # silently reject non raw-pulse lines
                     continue
-                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l)
-                if pulse not in state['pulses_shift']:
+                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l).strip()
+                if len(pulse) > 0 and pulse not in state['pulses_shift']:
                     state['pulses_shift'].append(pulse)
                 else:
                     print(f"Pulse already in state shift {pulse}")
