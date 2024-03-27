@@ -65,7 +65,7 @@ MqttDevice.prototype.update = function( topic, message )
             let newState = JSON.parse( message );
             this.state.Update( newState );
             // console.log("state now: ", this.state);
-            if (obj.hasOwnProperty('timestamp'))
+            if (newState.hasOwnProperty('timestamp'))
             {
                 this.lastUpdateDate = newState.timestamp;    
             }

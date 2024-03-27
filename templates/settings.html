@@ -770,7 +770,7 @@ $var language = language #so that it is available for menu.html base template
                 statesDiv.addEventListener('click', function(event) {
                     var target = event.target;
                     if (target.tagName === 'SPAN') {
-                        inputStates.value = target.textContent.substring(0, target.textContent.length - 1);
+                        inputStates.value = target.textContent;
                         addStatesButton.style.display = 'none'; // Hide the add button
                         updateStatesButton.style.display = 'inline-block'; // Display the update button
                         cancelStatesButton.style.display = 'inline-block'; // Display the update button
@@ -871,7 +871,7 @@ $var language = language #so that it is available for menu.html base template
                 populateRflinkItemForm($rflink_item_index)
            </script>
         </div>
-        <div id="rflink_pulses">
+        <div id="rflink_pulses" $("hidden" if not showSection.startswith("rflink") else "")>
             <H4>Pulses ($("Connected" if rflink["connected"] else "Disconnected"))</H4>
             <p>$rflink["error"]</p>
             <form id="rfLinkConnectForm" action="/rflink/activate" method="post">
