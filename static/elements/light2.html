@@ -1,4 +1,4 @@
-<div class="device-panel" ng-show="filter.LIGHT">
+<div class="device-panel" ng-show="i.guiFilter('LIGHT')">
     <div class="mqtt" ng-show="showMqttTopics">
         <span class="item">[{{i.type}}]</span>
         <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>

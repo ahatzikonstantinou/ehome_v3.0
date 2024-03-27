@@ -1,4 +1,4 @@
-<div class="device-panel" ng-show="filter.ALARM">
+<div class="device-panel" ng-show="i.guiFilter('ALARM')">
     <div class="mqtt" <div ng-show="showMqttTopics">
         <span class="item">[{{i.type}}]</span>
         <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>

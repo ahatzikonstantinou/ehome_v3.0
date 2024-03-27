@@ -95,7 +95,19 @@ $var language = language #so that it is available for menu.html base template
                     up: null,
                     down: null,
                     stop: null,                    
-                    cameraId: null
+                    cameraId: null,
+                    guiFilter: function(filterProperty){
+                        for(let i = 0 ; i < containers.length ; i++)
+                        {
+                            const rootContainer = findContainer(containers[i], this.itemContainer);
+                            if(rootContainer != null)
+                            {
+                                // console.log("Found root container of item ", this);
+                                return containers[i].gui.filter[filterProperty];
+                            }
+                        }
+                        throw new Error("Root container for item ", this, " not found.");
+                    }
                 },
         ];
         
@@ -565,8 +577,8 @@ $var language = language #so that it is available for menu.html base template
                 if (!!clickHandler) {
                     // console.log("adding click eventListenr '" + clickHandler + "' to element: ", element);
                     element.addEventListener('click', function() {
-                        console.log("eval clickHandler: ", clickHandler);
-                        console.log(eval(clickHandler));
+                        // console.log("eval clickHandler: ", clickHandler);
+                        eval(clickHandler);
                     });
                 }
             });
@@ -1089,7 +1101,27 @@ $var language = language #so that it is available for menu.html base template
                     break;
             }
         }
+       
+        function findContainer(container, containerGuid) {
+            if(container.guid === containerGuid)
+            {
+                return container;
+            }
 
+            if(container.containers == null)
+            {
+                return null;
+            }
+            for(let i = 0 ; i < container.containers.length ; i++ )
+            {
+                let foundContainer = findContainer(container.containers[i], containerGuid);
+                if(foundContainer != null)
+                {
+                    return foundContainer;
+                }
+            }
+            return null;
+        }
     </script>
 </head>
 <body>

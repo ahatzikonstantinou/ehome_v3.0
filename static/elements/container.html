@@ -65,7 +65,7 @@
             </div>
         </div>
         <div class="containers">
-            <div ng-repeat="o in c.containers">
+            <div class="child-container" ng-repeat="o in c.containers">
                 <container container='o' level="level + 1" show-label="c.containers.length > 1" expandAllChildren="c.gui.allChildrenExpanded" is-collapsed-house="c.gui.collapsed" filter="level == 1 ? c.gui.filter : filter" show-mqtt-topics="level == 1 ? c.gui.showMqttTopics : showMqttTopics"/>            
             </div>
         </div>
