@@ -8,6 +8,9 @@
         <div class="device-label">
             <span class="mdi mdi-shield-home device-icon"/>
             <span class="device-name">{{i.name}}</span>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.showDeviceCommands = !i.device.showDeviceCommands">
+                <span class="mdi mdi-dots-horizontal"></span>
+            </button>
         </div>
         <div class="state-container">
             <span class="state" ng-if="i.device.state.main == 'ARMING' || i.device.state.main == 'TRIGGERED'"
@@ -20,7 +23,21 @@
                     {{i.device.state.main}} 
             </span>
             <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
-            <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
+    </div>
+    <div ng-show="i.device.showDeviceCommands">    
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('arm')">
+            <span class="mdi mdi-shield-lock">Arm Away</span>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('arm_home')">
+            <span class="mdi mdi-shield-account">Arm Home</span>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('disarm')">
+            <span class="mdi mdi-shield-off">Disarm</span>
+        </button>
+        <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('sos')">
+            <span class="mdi mdi-home-sound-out">SOS</span>
+        </button>
+        
     </div>
 </div>

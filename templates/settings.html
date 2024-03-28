@@ -12,7 +12,7 @@ $var language = language #so that it is available for menu.html base template
         function decodeHtmlEntities(text) {
             var textarea = document.createElement("textarea");
             textarea.innerHTML = text;
-            return textarea.value;
+            return textarea.value.replace("'", "\"");
         }
 
         var items = [
@@ -41,7 +41,7 @@ $var language = language #so that it is available for menu.html base template
                 commands: [
                     $for c in ri["commands"]:
                     {
-                        name: decodeHtmlEntities("$c['name']"),
+                        name: "$c['name']".replace(/&#39;/g,"\""),
                         pulses_exact: [
                             $for e in c['pulses_exact']:
                                 "$e",
@@ -389,7 +389,7 @@ $var language = language #so that it is available for menu.html base template
                 $if items:
                     $for item in items:
                         <tr>
-                            <td>$(mqtt_servers[int(item['itemMqttServer'])]['address'] + ":" + mqtt_servers[int(item['itemMqttServer'])]['port'])</td>
+                            <td>$(mqtt_servers[int(item['itemMqttServer'])]['address'] + ":")$mqtt_servers[int(item['itemMqttServer'])]['port']</td>
                             $code:
                                 def getParent(containerGuid, delimit):
                                     if not containerGuid:
@@ -402,7 +402,7 @@ $var language = language #so that it is available for menu.html base template
                                         return getParent(container['parentContainer'], delimit) + delimit + container['containerName']
                                     else:
                                         return container['containerName']
-                            <td>$getParent(item['itemContainer'], "/") ($item['itemContainer'])</td>
+                            <td>$getParent(item['itemContainer'], " - ")</td>
                             <td>$item['itemName']</td>
                             <td>
                                 $(t['description'] for t in item_types if t['id'] == item['itemType'])
@@ -629,11 +629,11 @@ $var language = language #so that it is available for menu.html base template
                 <tbody>
                     $for item in rflink_items:                        
                         <tr>
-                            <td>$(mqtt_servers[int(item['mqtt_server'])]['address'] + ":" + mqtt_servers[int(item['mqtt_server'])]['port'])</td>
+                            <td>$(mqtt_servers[int(item['mqtt_server'])]['address'] + ":")$mqtt_servers[int(item['mqtt_server'])]['port']</td>
                             <td>$item["name"]</td>
                             <td hidden>${item["mqtt_state_publish_topic"]}</td>
                             <td hidden>${item["mqtt_command_subscribe_topic"]}</td>
-                            <td hidden>${', '.join([c["name"] for c in item["commands"]])}</td>
+                            <td hidden>${', '.join([list(c.keys())[0] for c in item["commands"]])}</td>
                             <td hidden>${', '.join([s["name"] for s in item["states"]])}</td>
                             <td>
                                 <button onclick="populateRflinkItemForm(${loop.index0})">Update</button>
@@ -703,11 +703,17 @@ $var language = language #so that it is available for menu.html base template
                 // Function to create a span with "x" button
                 function createSpan(text, type, id, item_id) {
                     var span = document.createElement('span');
-                    span.textContent = text;
                     span.setAttribute("data-type", type);
                     span.setAttribute("data-id", id);
                     span.setAttribute("data-item_id", item_id);
-                    
+                    if(type == 'command')
+                    {
+                        span.textContent = text.slice(1, -1);
+                    }
+                    else if(type == 'state')
+                    {
+                        span.textContent = text;
+                    }
                     var closeButton = document.createElement('button');
                     // closeButton.innerHTML = "&times;";
                     closeButton.className = 'mdi mdi-close close';
@@ -764,6 +770,9 @@ $var language = language #so that it is available for menu.html base template
                         addCommandsButton.style.display = 'none'; // Hide the add button
                         updateCommandsButton.style.display = 'inline-block'; // Display the update button
                         cancelCommandsButton.style.display = 'inline-block'; // Display the update button
+                        let form = document.getElementById('rflink_item_command_form');
+                        form.action = "/rflink_item/" + target.getAttribute("data-item_id") + "/command/" + target.getAttribute("data-id") + "/update";
+                        // console.log("form action: " + form.action);
                     }
                 });
 
@@ -775,18 +784,9 @@ $var language = language #so that it is available for menu.html base template
                         updateStatesButton.style.display = 'inline-block'; // Display the update button
                         cancelStatesButton.style.display = 'inline-block'; // Display the update button
                         type = target.getAttribute("data-type");
-                        if(type == 'command')
-                        {
-                            let form = document.getElementById('rflink_item_command_form');
-                            form.action = "/rflink_item/" + target.getAttribute("data-item_id") + "/command/" + target.getAttribute("data-id") + "/update";
-                            // console.log("form action: " + form.action);
-                        }
-                        else if(type == 'state')
-                        {
-                            let form = document.getElementById('rflink_item_state_form');
-                            form.action = "/rflink_item/" + target.getAttribute("data-item_id") + "/state/" + target.getAttribute("data-id") + "/update";
-                            // console.log("form action: " + form.action);
-                        }
+                        let form = document.getElementById('rflink_item_state_form');
+                        form.action = "/rflink_item/" + target.getAttribute("data-item_id") + "/state/" + target.getAttribute("data-id") + "/update";
+                        // console.log("form action: " + form.action);                        
                     }
                 });
 
@@ -871,7 +871,7 @@ $var language = language #so that it is available for menu.html base template
                 populateRflinkItemForm($rflink_item_index)
            </script>
         </div>
-        <div id="rflink_pulses" $("hidden" if not showSection.startswith("rflink") else "")>
+        <div id="rflink_pulses" $("hidden" if not showSection.endswith("pulses") else "")>
             <H4>Pulses ($("Connected" if rflink["connected"] else "Disconnected"))</H4>
             <p>$rflink["error"]</p>
             <form id="rfLinkConnectForm" action="/rflink/activate" method="post">
@@ -928,8 +928,6 @@ $var language = language #so that it is available for menu.html base template
                         <select id="rflink_item_state_select" name="rflink_item" required>
                             $for ri in rflink_items:
                                 $ i = loop.index0
-                                $for c in ri["commands"]:
-                                    <option value="$i,$(loop.index0),command">$(ri["name"])&nbsp;-&nbsp;command&nbsp;-&nbsp;$(c["name"])</option>
                                 $for s in ri["states"]:
                                     <option value="$i,$(loop.index0),state">$(ri["name"])&nbsp;-&nbsp;state&nbsp;-&nbsp;$(s["name"])</option>
                         </select>

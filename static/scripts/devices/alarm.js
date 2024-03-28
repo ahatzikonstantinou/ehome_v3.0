@@ -5,6 +5,7 @@ var Alarm = (function() {
     function Alarm( mqtt_publish_topic, mqtt_subscribe_topic, state )
     {
         MqttDevice.call( this, mqtt_publish_topic, state, mqtt_subscribe_topic );
+        this.showDeviceCommands = false;
     }
     Alarm.prototype = Object.create( MqttDevice.prototype );
     Alarm.prototype.constructor = Alarm;
@@ -26,75 +27,38 @@ var Alarm = (function() {
         }
     }
 
-    Alarm.prototype._deactivateRequest = function()
+    Alarm.prototype.sendCommand = function( command )
     {
-        console.log( 'alarm will send a deactivate request command' );
+        console.log( 'Light1 will send command ', command );
         if( this.publisher )
         {
-            var message = new Paho.Message( 'DEACTIVATE_REQUEST' );
-            message.destinationName = this.mqtt_publish_topic ;
-            console.log( 'Alarm sending message: ', message );
-            this.publisher.send( message );
-        }            
-    }
-
-    Alarm.prototype.deactivate = function( pin )
-    {
-        console.log( 'alarm will send a deactivate command with pin: ', pin );
-        if( ( 'TRIGGERED' == this.state.main || 'ACTIVATED' == this.state.main ) && this.publisher )
-        {
-            var message = new Paho.Message( '{"cmd":"DEACTIVATE", "pin":"' + pin + '"}' );
-            message.destinationName = this.mqtt_publish_topic ;
-            console.log( 'Alarm sending message: ', message );
-            this.publisher.send( message );
-        }
-    }
-
-    Alarm.prototype.armHome = function()
-    {
-        console.log( 'alarm will send a arm_home command' );
-        if( 'DISARMED' == this.state.main && this.publisher )
-        {
-            var message = new Paho.Message( 'ARM_HOME' );
-            message.destinationName = this.mqtt_publish_topic ;
-            console.log( 'Alarm sending message: ', message );
-            this.publisher.send( message );
-        }
-    }
-
-    Alarm.prototype.armAway = function()
-    {
-        console.log( 'alarm will send a arm_away command' );
-        if( 'DISARMED' == this.state.main && this.publisher )
-        {
-            var message = new Paho.Message( 'ARM_AWAY' );
-            message.destinationName = this.mqtt_publish_topic ;
-            console.log( 'Alarm sending message: ', message );
-            this.publisher.send( message );
-        }
-    }
-
-    Alarm.prototype._disarm = function()
-    {
-        console.log( 'alarm will send a DISARM command' );
-        if( this.publisher )
-        {
-            var message = new Paho.Message( 'DISARM' );
-            message.destinationName = this.mqtt_publish_topic ;
-            console.log( 'Alarm sending message: ', message );
-            this.publisher.send( message );
-        }
-    }        
-
-    Alarm.prototype.disarm = function()
-    {
-        if( 'TRIGGERED' == this.state.main || 'ACTIVATED' == this.state.main )
-        {
-            this._deactivateRequest();
-        }
-        else if( 'ARMED_HOME' == this.state.main || 'ARMED_AWAY' == this.state.main || 'ARMING' == this.state.main )
-        {
-            this._disarm();
+            var cmd = null;
+            switch( command )
+            {
+                case "arm": cmd = {"command": "ARM_AWAY"};
+                    break;
+                case "arm_home": cmd = {"command": "ARM_HOME"};
+                    break;
+                case "disarm": cmd = {"command": "DISARM"};
+                    break;
+                case "sos": cmd = {"command": "SOS"};
+                    break;
+            }
+            try
+            {
+                let message = new Paho.Message( JSON.stringify(cmd) );
+                if(this.mqtt_subscribe_topic.trim().length == 0)
+                {
+                    throw new Error("Empty mqtt_subscribe_topic in Alarm device. Cannot send command.");
+                }
+                message.destinationName = this.mqtt_subscribe_topic ;
+                console.log( 'Alarm sending message: ', message.payloadString );
+                this.publisher.send( message );
+            }
+            catch( error )
+            {
+                console.error( error );
+            }
         }
     }
     
