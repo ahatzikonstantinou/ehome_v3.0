@@ -156,7 +156,7 @@ item_types = [
 render = web.template.render('templates/', base='menu')
 # render = web.template.render('templates/')
 
-rflink = None
+rflink = RFLink(rflink_settings)
 # For some unknown reason rflink is initialized twice
 # which means that if the rflink_settings have activated = True
 # there will be two attempts to open the serial port
@@ -228,7 +228,7 @@ class Messenger:
     
     def SendStates(self, detectedStates):
         self.queue.put(detectedStates)
-        print("Set to send states")
+        print(f"Set to send {len(detectedStates)} states")
 
 
     def publish_state_thread(self):
@@ -513,37 +513,44 @@ rflink_data = queue.Queue()
 class RFLinkActivate:
     def POST(self):
         data = web.input()
-        rflink_settings["activated"] = True
-        rflink_settings["serial_port"] = data.get("serial_port")
-        print(f"serial port: {rflink_settings['serial_port']}")
         try:
+            rflink_settings["activated"] = True
+            rflink_settings["serial_port"] = data.get("serial_port")
+            print(f"serial port: {rflink_settings['serial_port']}")
             get_rflink().connect(rflink_settings["serial_port"])
-        except Exception as e:
-                print(f"Could not connect to serial port {rflink_settings['serial_port']}. Error: {e}")
-                return json.dumps({"error": str(e)})
-        with open(rflink_file_path, 'w') as f:
+            with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
+        except Exception as e:
+            print(f"Could not connect to serial port {rflink_settings['serial_port']}. Error: {e}")
+            return json.dumps({"error": str(e)})
         raise web.seeother('/settings?showSection=rflink,pulses')
 
 class RFLinkDeactivate:
     def POST(self):
-        data = web.input()
-        get_rflink().disconnect()
-        rflink_settings["activated"] = False
-        with open(rflink_file_path, 'w') as f:
-                json.dump(rflink_settings, f, indent=4)
+        try:
+            get_rflink().disconnect()
+            rflink_settings["activated"] = False
+            with open(rflink_file_path, 'w') as f:
+                    json.dump(rflink_settings, f, indent=4)
+        except Exception as e:
+            print(f"Could not deactivate serial port {rflink_settings['serial_port']}. Error: {e}")
+            return json.dumps({"error": str(e)})
         raise web.seeother('/settings?showSection=rflink,pulses')
 
 class RFLinkDebug:
     def POST(self, debug):
         debug = int(debug)
-        rflink_settings["debug"] = False if debug == 0 else True
-        with open(rflink_file_path, 'w') as f:
-                json.dump(rflink_settings, f, indent=4)
-        if get_rflink().connected:
-            get_rflink().disconnect()
-            get_rflink().rflink_settings = rflink_settings
-            get_rflink().connect(rflink_settings["serial_port"])
+        try:
+            rflink_settings["debug"] = False if debug == 0 else True
+            if get_rflink().connected:
+                get_rflink().disconnect()
+                get_rflink().rflink_settings = rflink_settings
+                get_rflink().connect(rflink_settings["serial_port"])
+            with open(rflink_file_path, 'w') as f:
+                    json.dump(rflink_settings, f, indent=4)
+        except Exception as e:
+            print(f"Could not set debug of serial port {rflink_settings['serial_port']} to {debug}. Error: {e}")
+            return json.dumps({"error": str(e)})
         raise web.seeother('/settings?showSection=rflink,pulses')
 
 class SSE:
@@ -554,27 +561,24 @@ class SSE:
         # i = 0
         rflink = get_rflink()
         while True:
-            # Read data from the serial port, only when rflink.connected or
-            # this will block the serial port and rflink class will not be able to read it
-            if rflink.connected and rflink.serial and rflink.serial.isOpen():
-                try:
-                    data = rflink.serial.readline().decode('utf-8').strip()
-                    if data:
-                        
-                        # 1. have rflink detect of this is a known state
-                        # remove the sequence id that rflink prefixes each line with
-                        line = ';'.join(data.split(';')[2:])
-                        print(f"Will try line: {line}")
-                        if len(line.strip()) == 0:
-                            print(f"Empty line")
-                            continue
-                        messenger.SendStates(rflink.detectStates(line))
+            data = None
+            try:
+                data = rflink.readline()
+            except Exception as e:
+                print(f"Error reading from serial port: {e}")
 
-                        # 2. Send thae recieved data to the settings web page via Server-Sent-Event
-                        yield f"data: {data}\n\n\n" #3 \n here to display correctly in textarea
+            if data:                
+                # 1. have rflink detect of this is a known state
+                # remove the sequence id that rflink prefixes each line with
+                line = ';'.join(data.split(';')[2:])
+                print(f"Will try line: {line}")
+                if len(line.strip()) == 0:
+                    print(f"Empty line")
+                    continue
+                messenger.SendStates(rflink.detectStates(line))
 
-                except Exception as e:
-                    print(f"Error reading from serial port: {e}")
+                # 2. Send the recieved data to the settings web page via Server-Sent-Event
+                yield f"data: {data}\n\n\n" #3 \n here to display correctly in textarea
             
             time.sleep(0.1) #sleep is necessary in order to not block the app
 

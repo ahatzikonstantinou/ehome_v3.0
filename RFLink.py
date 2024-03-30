@@ -3,6 +3,8 @@ import time
 import re
 import asyncio
 import threading
+# from contextlib import contextmanager
+import queue
 
 import json #for deubugging
 
@@ -11,48 +13,138 @@ class DetectedState:
         self.rflink_item = rflink_item 
         self.state_name = state_name
 
+# @contextmanager
+# def acquire_timeout(lock, timeout):
+#     result = lock.acquire(timeout=timeout)
+#     try:
+#         yield result
+#     finally:
+#         if result:
+#             print(f"Releasing lock")
+#             lock.release()
+
 class RFLink:
     CONNECTED_PATTERN = "Nodo RadioFrequencyLink - RFLink Gateway"
     DEBUG_CMD = "10;rfdebug=on;\r\n"
     DEBUG_OK_REPLY = "RFDEBUG=ON;"
+    VERSION_CMD = "10;version;\r\n"
+    VERSION_REPLY = "VER="
+    STATUS_CMD = "10;status;\r\n"
+    STATUS_REPLY = "STATUS;"
     RAW_PULSE_PATTERN = ";Pulses(uSec)="
     def __init__(self, rflink_settings):
         self.connected = False
         self.connection_error = ""
         self.serial_port = None
         self.serial = None
+        self.command_queue = queue.Queue()
+        self.line_queue = queue.Queue()
+        self.read_write_thread = threading.Thread(target=self.read_write)
+        self.read_write_thread.daemon = True
+        self.read_write_thread.start()
+
         self.rflink_settings = rflink_settings
         if rflink_settings["activated"]:
+            print(f"RFLink connecting to {rflink_settings['serial_port']}")
             self.connect(rflink_settings["serial_port"])
     
+    def readline(self):
+        if not self.line_queue.empty():
+            return self.line_queue.get()
+        return None
+    
+    # def readLineIntoQueue(self):
+    #     while self.read_write_thread_run:
+    #         # print(f"readLineIntoQueue trying to get lock")
+    #         # with acquire_timeout(self.lock, 0.001) as acquired:
+    #         #     if acquired:
+    #         #         print(f"readLineIntoQueue got lock")
+    #         if self.serial and self.serial.isOpen():
+    #             try:
+    #                 if self.serial.in_waiting > 0:
+    #                     line = self.serial.readline().decode('utf-8').strip()
+    #                     self.line_queue.put(line)
+    #             except Exception as e:
+    #                 print(f"Error reading from serial: {e}")
+    #         time.sleep(0.001)
+    
     def sendCommand(self, cmd):
-        print(f"self.serial: {self.serial is not None}, isOpen: {self.serial.isOpen()}")
-        if self.serial and self.serial.isOpen():
-            msg = cmd + "\r\n"
-            self.serial.write(msg.encode())
+        self.command_queue.put(cmd)
 
-    def read_and_send(self):
-        # Create an event loop
-        while self.serial and self.serial.isOpen():
-            try:
-                # Read from serial port                    
-                data = self.serial.readline().decode('utf-8').strip()
-                if data:
-                    # data += "\n"
-                    print(f"Read serial data: {data}")
-            except Exception as e:
-                print(f"Error reading from serial port: {e}")
+    # def sendCommandFromQueue(self):
+    #     while True:
+    #         if not self.command_queue.empty():
+    #             cmd = self.command_queue.get()
+    #             sent = False
+    #             print(f"sendCommandFromQueue trying to get lock to send {cmd}")
+    #             while not sent:
+    #                 with acquire_timeout(self.lock, 0.001) as acquired:
+    #                     if acquired:
+    #                         print(f"sendCommandFromQueue got lock")
+    #                         print(f"self.serial: {self.serial is not None}, isOpen: {self.serial.isOpen()}")
+    #                         if self.serial and self.serial.isOpen():
+    #                             msg = cmd + "\r\n"
+    #                             self.serial.write(msg.encode())
+    #                             sent = True
+    #                         else:
+    #                             raise Exception("Serial is None or not open")
+
+    def read_write(self):
+        while True:
+            # read any lines waiting in serial
+            if self.serial and self.serial.isOpen():
+                try:
+                    if self.serial.in_waiting > 0:
+                        line = self.serial.readline().decode('utf-8').strip()
+                        self.line_queue.put(line)
+                except Exception as e:
+                    print(f"Error reading from serial: {e}")
+
+            # send any command that is in the queue
+            if not self.command_queue.empty():
+                cmd = self.command_queue.get()
+                print(f"Will send command {cmd}")
+                if self.serial and self.serial.isOpen():
+                    msg = cmd + "\r\n"
+                    self.serial.write(msg.encode())
+                    print(f"Command {cmd} was sent")
+                else:
+                    raise Exception("Serial is None or not open")
+                
+            time.sleep(0.001)       
 
     def send_initial_command(self):
-        timeout = 5  # Timeout in seconds
-        time.sleep(1)  # Delay for 1 second before sending the command
-        received_data = self.read_until_pattern_or_timeout(self.CONNECTED_PATTERN, timeout)
-        
+        # Execute the sequence of expected patterns and commands as observed when RFLink Loader starts logging
+        timeout = 10  # Timeout in seconds
+        #
+        # wait for Node RadioFrequencyLink initial pattern
+        #time.sleep(5)
+        received_data = self.read_until_pattern_or_timeout(self.CONNECTED_PATTERN, timeout)        
         if received_data is None:
-            print("Timeout occurred. Could not find desired pattern.")
-            return
+            print(f"Timeout occurred. Could not find pattern {self.CONNECTED_PATTERN}.")
+            # return
         print(received_data)
-        
+        # #
+        # #send version command
+        # self.serial.write(self.VERSION_CMD.encode())
+        # print(f"Sent: {self.VERSION_CMD.strip()}")
+        # time.sleep(1)  # Delay for 1 second after sending the command
+        # received_data = self.read_until_pattern_or_timeout(self.VERSION_REPLY, timeout)
+        # if received_data is None:
+        #     print(f"Timeout occurred. Could not find expected pattern {self.VERSION_REPLY}.")
+        #     return
+        # print(received_data)
+        # #
+        # #send status command
+        # self.serial.write(self.STATUS_CMD.encode())
+        # print(f"Sent: {self.STATUS_CMD.strip()}")
+        # time.sleep(1)  # Delay for 1 second after sending the command
+        # received_data = self.read_until_pattern_or_timeout(self.STATUS_REPLY, timeout)
+        # if received_data is None:
+        #     print(f"Timeout occurred. Could not find expected pattern {self.STATUS_REPLY}.")
+        #     return
+        # print(received_data)
+
         if self.rflink_settings["debug"]:
             command = self.DEBUG_CMD
             self.serial.write(command.encode())
@@ -71,7 +163,9 @@ class RFLink:
         received_data = ""
         while time.time() - start_time < timeout:
             if self.serial.in_waiting > 0:
-                received_data += self.serial.readline().decode().strip()
+                data = self.serial.readline()
+                received_data += data.decode(encoding="ascii", errors="ignore").strip()
+                print(f"Reading pattern {received_data}")
                 if pattern in received_data:
                     return received_data
         return None
@@ -79,27 +173,52 @@ class RFLink:
     def connect(self, serial_port):
         self.serial_port = serial_port
         try:
-            # Open serial port
-            self.serial = serial.Serial(serial_port, baudrate=57600, bytesize=8, stopbits=1, parity=serial.PARITY_NONE, timeout=1)
-            if self.serial.isOpen():
-                self.send_initial_command()
-                self.connected = True             
-                return True
-            else:
-                self.connected = False
-                self.connection_error = "No particular error reported"
-                return False
+            # print(f"connect trying to get lock")
+            # with acquire_timeout(self.lock, 0.1) as acquired:
+            #     if acquired:
+            #         print(f"connect got lock")
+                    if self.serial is not None and self.serial.isOpen():
+                        print(f"serial is already connected, will disconnect before reconnecting")
+                        self.disconnect(get_lock = False)
+                    # Open serial port
+                    self.serial = serial.Serial(serial_port, timeout=0)
+                    self.serial.close()
+                    print(f"Port {serial_port} is now reset")
+                    self.serial = serial.Serial(serial_port, baudrate=57600, bytesize=8, stopbits=1, parity=serial.PARITY_NONE, timeout=1)
+                    print(f"Port {serial_port} is now created")
+                    if self.serial.isOpen():
+                        print(f"Port {serial_port} is now open")
+                        self.send_initial_command()
+                        self.connected = True             
+                        return True
+                    else:
+                        self.connected = False
+                        self.connection_error = "No particular error reported"
+                        return False
         except serial.SerialException as e:
             print(f"Failed to connect to serial port {serial_port}: {e}")
             self.connected = False
             self.connection_error = e
             return False
 
-    def disconnect(self):
+    def disconnect(self, get_lock = True):
         # Close serial port
-        if self.serial and self.serial.isOpen():
-            self.serial.close()
-            self.connected = False
+        # if get_lock:
+        #     print(f"disconnect trying to get lock")
+        #     with acquire_timeout(self.lock, 0.1) as acquired:
+        #         if acquired:
+        #             print(f"disconnect got lock")
+                    if self.serial and self.serial.isOpen():
+                        self.serial.close()
+                        self.connected = False
+                    # else:
+                    #     raise Exception("Serial already closed")
+        #         else:
+        #             raise Exception("Could not get lock on serial. Try again.")
+        # else:
+        #     if self.serial and self.serial.isOpen():
+        #         self.serial.close()
+        #         self.connected = False
 
     def processRawPulseLine(self, pulseMiddle, line):
         if RFLink.RAW_PULSE_PATTERN not in line:
@@ -111,6 +230,7 @@ class RFLink:
 
     @staticmethod
     def convert_pulses_to_binary(pulse_data, pulse_mid, pulse_max, pulse_min):
+        '''Takes array of strings representing integers, and returns array of 1s and 0s (integers)'''
         binary_values = []
         mx = None
         mn = None
@@ -167,6 +287,7 @@ class RFLink:
 
     @staticmethod
     def convert_text_to_binary(text, pulse_mid, pulse_max=None, pulse_min=None):
+        '''Takes text with comma separated integers (string), and returns array of 1s and 0s (integers)'''
         pulse_data = RFLink.extract_pulse_data(text)
         # print(f"pulse_data: {pulse_data}")
         if pulse_data is not None:        
@@ -224,8 +345,9 @@ class RFLink:
         results = {}
         # print(f"Doing rflink_items:{json.dumps(rflink_items, indent=4)}")
         for i, t in enumerate(rflink_items):
-            print(f"Doing item:{i}")
+            # print(f"Doing item:{i}")
             # start with dommands
+            last_used_pulse_middle = None # used to avoid mutliple convert_text_to_binary with the same pulse_middle
             for c in t['commands']:
                 data = line                
                 if RFLink.RAW_PULSE_PATTERN in line:
@@ -233,50 +355,61 @@ class RFLink:
                         # if the command has no pulse_middle defined this raw pulse cannot be
                         # converted to binary and therefore cannot be processed
                         continue
-
-                    data = RFLink.convert_text_to_binary(line, c['pulse_middle'])
+                    if last_used_pulse_middle != c['pulse_middle']:
+                        last_used_pulse_middle = c['pulse_middle']
+                        data = RFLink.convert_text_to_binary(line, c['pulse_middle'])
                 for e in c['pulses_exact']:
-                    print(f"Doing command {e}")
+                    # print(f"Doing command {e}")
                     if e == data:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
                         results[i]['commands'].append({"name": c['name'], "pulses": e})
             # try states
+            last_used_pulse_middle = None   # if data is raw pulses it is converted to string from this point onwards
+            data = line
             for s in t['states']:
-                print(f"Doing state {s['name']}")
-                data = line                
+                # print(f"Doing state {s['name']}")                
                 if RFLink.RAW_PULSE_PATTERN in line:
                     if not s['pulse_middle']:
                         # if the state has no pulse_middle defined this raw pulse cannot be
                         # converted to binary and therefore cannot be processed
+                        # print(f"It has no pulse_middle, skipping...")
                         continue
-                    data = ''.join(str(bit) for bit in RFLink.convert_text_to_binary(line, s['pulse_middle']))
-                    print(f"converted line to: {data}")
-                for e in s['pulses_exact']:
-                    print(f"Doing state exact {e}")
-                    if e == data:
-                        if i not in results:
-                            results[i] = {"name": t['name'], "commands": [], "states": []}
-                        results[i]['states'].append({"name": s["name"], "type": "exact", "pulses": e})
+                    if last_used_pulse_middle != s['pulse_middle']:
+                        last_used_pulse_middle = s['pulse_middle']
+                        data = ''.join(str(bit) for bit in RFLink.convert_text_to_binary(line, s['pulse_middle']))
+                        # print(f"last_used_pulse_middle != s['pulse_middle'] so I re-converted line to: {data}")
+                if s['use_exact_pulse']:
+                    for e in s['pulses_exact']:
+                        # print(f"Doing state exact ({len(e)}) {e} against ({len(data)}) {data}")
+                        if e == data:
+                            # print(f"Found it!")
+                            if i not in results:
+                                results[i] = {"name": t['name'], "commands": [], "states": []}
+                            results[i]['states'].append({"name": s["name"], "type": "exact", "pulses": e})
+                        # else:
+                        #     print(f"They are different")
 
                 if RFLink.RAW_PULSE_PATTERN in line: # only raw pulses are compared using shift window and max_common_substring
-                    print(f"Doing state max_common_substring {s['max_common_substring']}")
-                    if s['max_common_substring'] and s['max_common_substring'] in data:
+                    # print(f"Doing state max_common_substring {s['max_common_substring']}")
+                    if s['use_max_common_substring'] and s['max_common_substring'] and s['max_common_substring'] in data:
                         if i not in results:
                             results[i] = {"name": t['name'], "commands": [], "states": []}
                         results[i]['states'].append({"name": s["name"], "type": "max_common_substring", "pulses": s['max_common_substring']})
-                    for e in s['pulses_shift']:
-                        print(f"Doing state compareAndShift {e}")
-                        if RFLink.compareAndShift(data, e, s['shift_window_size']):
-                            if i not in results:
-                                results[i] = {"name": t['name'], "commands": [], "states": []}
-                            print(f"Appending to states of item {i}")
-                            results[i]['states'].append({"name": s["name"], "type": "shift", "pulses": e})                    
+                    if s['use_shift_window'] and s['shift_window_size'] > 0:
+                        for e in s['pulses_shift']:
+                            # print(f"Doing state compareAndShift ({len(e)}) {e}")
+                            if RFLink.compareAndShift(data, e, s['shift_window_size']):
+                                if i not in results:
+                                    results[i] = {"name": t['name'], "commands": [], "states": []}
+                                # print(f"Appending to states of item {i}")
+                                results[i]['states'].append({"name": s["name"], "type": "shift", "pulses": e})    
+            
         print(f"Results:{json.dumps(results, indent=4)}")        
         return results
 
     def detectStates(self, line):
-        print("Will detect states from line {line}")
+        print(f"Will detect states from line {line}")        
         detectedStates = []
         results = RFLink.detect(line, self.rflink_settings["items"])
         for rflink_item_index, value in results.items():
