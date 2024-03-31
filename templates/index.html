@@ -1129,6 +1129,62 @@ $var language = language #so that it is available for menu.html base template
     </script>
 </head>
 <body>
+    <div id="itemStateChangeModal" class="itemStateChangeModalDialog">
+        <div class="itemStateChangeModalDialog-content">
+          <span class="close" onclick="closeItemStateChangeModal()">&times;</span>
+          <p class="itemStateChangeModalDialog-title">Manual state change</p>
+          <p id="modalMessage">Manually change the state of <span id="itemNamePlaceholderInModalDialog">item</span></p>
+          <div class="itemStateChangeModalDialog-buttons" id="itemStateChangeModalButtons">
+            <!-- Buttons will be added here dynamically -->
+          </div>
+          <button class="itemStateChangeModalDialog-button cancel" onclick="closeItemStateChangeModal()">Cancel</button>
+        </div>
+      </div>
+      <script>
+        function manualStateChange(item, pairs) {
+          let modal = document.getElementById("itemStateChangeModal");
+          let modalButtons = document.getElementById("itemStateChangeModalButtons");
+          let itemNamePlaceholder = document.getElementById("itemNamePlaceholderInModalDialog");
+        
+          // Set item name in placeholder
+          itemNamePlaceholder.textContent = item.name;
+        
+          // Clear previous buttons
+          modalButtons.innerHTML = "";
+        
+          // Add buttons based on pairs
+          pairs.forEach(pair => {
+            let button = document.createElement("button");
+            button.textContent = pair[0];
+            button.classList.add("itemStateChangeModalDialog-button");
+            button.onclick = function() {
+              console.log(pair[1]);
+              item.device.sendStatus(pair[1]);
+              closeItemStateChangeModal();
+            };
+            modalButtons.appendChild(button);
+          });
+        
+          // Display itemStateChangeModalDialog
+          modal.style.display = "block";
+        }
+        
+        function closeItemStateChangeModal() {
+          var modal = document.getElementById("itemStateChangeModal");
+          modal.style.display = "none";
+        }
+        
+        // Example usage
+        var item = { name: "Example Item" };
+        var pairs = [
+          ["Button 1", "Action 1"],
+          ["Button 2", "Action 2"],
+          ["Button 3", "Action 3"]
+        ];
+        
+        //openModal(item, pairs);
+        </script>
+    
     <div id="content">
         <div class="servers">
             <div ng-repeat="s in mqttServers">

@@ -19,7 +19,7 @@
             </span>
             <span class="state"
                 ng-class="{ 'disarmed': i.device.state.main == 'DISARMED', 'arming': i.device.state.main == 'ARMING' , 'armed-home': i.device.state.main == 'ARMED_HOME' , 'armed-away': i.device.state.main == 'ARMED_AWAY' , 'triggered': i.device.state.main == 'TRIGGERED', 'activated': i.device.state.main == 'ACTIVATED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }"
-                data-translate="home.alarm.{i.device.state.main}">
+                data-translate="home.alarm.{i.device.state.main}" ng-click='manualStateChange(i, [["ARMED_AWAY","{\"main\":\"ARMED_AWAY\"}"], ["ARMED_HOME","{\"main\":\"ARMED_HOME\"}"], ["DISARMED","{\"main\":\"DISARMED\"}"]])'>
                     {{i.device.state.main}} 
             </span>
             <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>

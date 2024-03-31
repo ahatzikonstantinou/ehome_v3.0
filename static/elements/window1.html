@@ -9,7 +9,7 @@
             <span class="device-name">{{i.name}}</span>
         </div>
         <div class="state-container">
-            <span class="state" ng-class="{ 'warning': i.device.state.main == 'OPEN', 'info': i.device.state.main == 'CLOSED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }" data-translate="home.state.{i.device.state.main}">{{i.device.state.main}}</span>
+            <span class="state" ng-class="{ 'warning': i.device.state.main == 'OPEN', 'info': i.device.state.main == 'CLOSED', 'unavailable': i.device.state.main == 'UNAVAILABLE' }" data-translate="home.state.{i.device.state.main}" ng-click='manualStateChange(i, [["OPEN","{\"main\":\"OPEN\"}"], ["CLOSED","{\"main\":\"CLOSED\"}"]])'>{{i.device.state.main}}</span>
             <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
         </div>
     </div>

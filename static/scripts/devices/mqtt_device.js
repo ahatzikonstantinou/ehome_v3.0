@@ -89,3 +89,18 @@ MqttDevice.prototype.setPublisher = function( publisher )
 {
     this.publisher = publisher;
 }
+
+MqttDevice.prototype.sendStatus = function( mqtt_payload )
+{
+    try
+    {
+        console.log("Sending topic: " + this. mqtt_publish_topic + ", message: " + mqtt_payload  );
+        let message = new Paho.Message( mqtt_payload );
+        message.destinationName = this.mqtt_publish_topic ;
+        this.publisher.send( message );
+    }
+    catch( error )
+    {
+        console.error( error );
+    }
+}

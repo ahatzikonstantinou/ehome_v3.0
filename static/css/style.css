@@ -317,3 +317,70 @@ button.expand {
     padding-top: 2px;
     padding-bottom: 8px;
 }
+
+/* Styles for itemStateChangeModalDialog in index.hml*/
+.itemStateChangeModalDialog {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .itemStateChangeModalDialog-content {
+    background: linear-gradient(to bottom, #ffffff, #ccccff);
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+  }
+
+  .itemStateChangeModalDialog-title {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .itemStateChangeModalDialog-content .close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: #555;
+    cursor: pointer;
+  }
+
+  .itemStateChangeModalDialog-buttons {
+    margin-top: 20px;
+  }
+
+  .itemStateChangeModalDialog-button {
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .itemStateChangeModalDialog-button.cancel {
+    background-color: #dc3545;
+  }
+
+  .itemStateChangeModalDialog-button:hover {
+    background-color: #0056b3;
+  }
+
+  #itemNamePlaceholderInModalDialog {
+      font-weight:bold;
+  }
