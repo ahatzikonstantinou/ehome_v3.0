@@ -91,8 +91,8 @@ class RFLink:
 
     def read_write(self):
         while True:
-            # read any lines waiting in serial
             if self.serial and self.serial.isOpen():
+                # read any lines waiting in serial
                 try:
                     if self.serial.in_waiting > 0:
                         line = self.serial.readline().decode('utf-8').strip()
@@ -100,17 +100,14 @@ class RFLink:
                 except Exception as e:
                     print(f"Error reading from serial: {e}")
 
-            # send any command that is in the queue
-            if not self.command_queue.empty():
-                cmd = self.command_queue.get()
-                print(f"Will send command {cmd}")
-                if self.serial and self.serial.isOpen():
+                # send any command that is in the queue
+                if not self.command_queue.empty():
+                    cmd = self.command_queue.get()
+                    print(f"Will send command {cmd}")
                     msg = cmd + "\r\n"
                     self.serial.write(msg.encode())
                     print(f"Command {cmd} was sent")
-                else:
-                    raise Exception("Serial is None or not open")
-                
+           
             time.sleep(0.001)       
 
     def send_initial_command(self):

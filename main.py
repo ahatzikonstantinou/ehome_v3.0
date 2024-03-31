@@ -29,10 +29,12 @@ urls = (
     '/retrieve/container/(\d+)', 'RetrieveContainer',
     '/update/container/(\d+)', 'UpdateContainer',
     '/delete/container/(\d+)', 'DeleteContainer',
+    '/move/container/(\d+)/(up|down)', 'MoveContainer',
     '/create/item', 'CreateItem',
     '/retrieve/item/(\d+)', 'RetrieveItem',
     '/update/item/(\d+)', 'UpdateItem',
     '/delete/item/(\d+)', 'DeleteItem',
+    '/move/item/(\d+)/(up|down)', 'MoveItem',
     '/rflink/activate', 'RFLinkActivate',
     '/rflink/deactivate', 'RFLinkDeactivate',
     '/rflink/debug/(\d)', 'RFLinkDebug',
@@ -436,6 +438,52 @@ class DeleteContainer:
         else:
             return json.dumps({"error": "Container not found"})
 
+class MoveContainer:
+    def POST(self, container_id, direction):
+        container_id = int(container_id)
+        if container_id > len(containers):
+            raise Exception(f"Invalid container id {container_id}. Only {len(containers)} exist.")
+        direction = direction
+        if direction != "up" and direction != "down":
+            raise Exception(f"Invalid direction {direction}. Valid values are 'up' and 'down'.")
+        print(f"Moving {containers[container_id]['containerName']}({container_id}) {direction}.")
+        candidate_swap_id = None
+        length = len(containers)
+        if direction == "up":
+            for i in range(length):
+
+                # iterated the list until container_id's position 
+                if i == container_id:
+
+                    # if a sibling exists before this container, swap
+                    if i == container_id and candidate_swap_id is not None:  
+                        containers[candidate_swap_id], containers[container_id] = containers[container_id], containers[candidate_swap_id]
+                        with open(containers_file_path, 'w') as f:
+                            json.dump(containers, f, indent=4)
+                    
+                    break; # nothing else to do
+                else:   # we are not at container_id's position yet
+                    # found an container_id's sibling before container_id, this is a candidate swap
+                    if containers[i]["parentContainer"] == containers[container_id]["parentContainer"]:
+                        candidate_swap_id = i
+        elif direction == "down":
+            for i in range(length - 1, -1, -1):
+                # iterated the list until container_id's position 
+                if i == container_id:
+
+                    # if a sibling exists before this container, swap
+                    if i == container_id and candidate_swap_id is not None:  
+                        containers[candidate_swap_id], containers[container_id] = containers[container_id], containers[candidate_swap_id]
+                        with open(containers_file_path, 'w') as f:
+                            json.dump(containers, f, indent=4)
+                    
+                    break; # nothing else to do
+                else:   # we are not at container_id's position yet
+                    # found an container_id's sibling before container_id, this is a candidate swap
+                    if containers[i]["parentContainer"] == containers[container_id]["parentContainer"]:
+                        candidate_swap_id = i
+        raise web.seeother('/settings?showSection=containers')
+
 class CreateItem:
     def POST(self):
         data = web.input()
@@ -502,11 +550,50 @@ class DeleteItem:
             return json.dumps({"error": "Item not found"})
         
 class MoveItem:
-    def POST(self, item_id):
+    def POST(self, item_id, direction):
+        item_id = int(item_id)
         if item_id > len(items):
-            return
-        data = web.input()
-        print(f"New position for {items[item_id].itemName} is {data.get('order')}")
+            raise Exception(f"Invalid item id {item_id}. Only {len(items)} exist.")
+        direction = direction
+        if direction != "up" and direction != "down":
+            raise Exception(f"Invalid direction {direction}. Valid values are 'up' and 'down'.")
+        print(f"Moving {items[item_id]['itemName']}({item_id}) {direction}.")
+        candidate_swap_id = None
+        length = len(items)
+        if direction == "up":
+            for i in range(length):
+
+                # iterated the list until item_id's position 
+                if i == item_id:
+
+                    # if a sibling exists before this item, swap
+                    if i == item_id and candidate_swap_id is not None:  
+                        items[candidate_swap_id], items[item_id] = items[item_id], items[candidate_swap_id]
+                        with open(items_file_path, 'w') as f:
+                            json.dump(items, f, indent=4)
+                    
+                    break; # nothing else to do
+                else:   # we are not at item_id's position yet
+                    # found an item_id's sibling before item_id, this is a candidate swap
+                    if items[i]["itemContainer"] == items[item_id]["itemContainer"]:
+                        candidate_swap_id = i
+        elif direction == "down":
+            for i in range(length - 1, -1, -1):
+                # iterated the list until item_id's position 
+                if i == item_id:
+
+                    # if a sibling exists before this item, swap
+                    if i == item_id and candidate_swap_id is not None:  
+                        items[candidate_swap_id], items[item_id] = items[item_id], items[candidate_swap_id]
+                        with open(items_file_path, 'w') as f:
+                            json.dump(items, f, indent=4)
+                    
+                    break; # nothing else to do
+                else:   # we are not at item_id's position yet
+                    # found an item_id's sibling before item_id, this is a candidate swap
+                    if items[i]["itemContainer"] == items[item_id]["itemContainer"]:
+                        candidate_swap_id = i
+        raise web.seeother('/settings?showSection=items')
 
 rflink_data = queue.Queue()
    

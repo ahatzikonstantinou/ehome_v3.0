@@ -111,11 +111,11 @@
     },
     {
         "itemName": "\u03a3\u03c5\u03bd\u03b1\u03b3\u03b5\u03c1\u03bc\u03cc\u03c2",
-        "itemMqttServer": "0",
+        "itemMqttServer": 0,
         "itemContainer": "c95e141a-bf63-4467-88d2-b028cabe2dfa",
         "itemType": "ALARM",
         "publish": "E/4/A/A/state",
-        "subscribe": "E/4/A/A/command",
+        "subscribe": "",
         "filterById": false,
         "idFilterValue": ""
     },

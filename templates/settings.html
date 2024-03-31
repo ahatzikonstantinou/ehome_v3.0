@@ -270,7 +270,14 @@ $var language = language #so that it is available for menu.html base template
                         let container_items = items.filter(function(i){ return i.itemContainer == container.guid;});
                         var disable_delete = container_items.length > 0 && container.parentContainer == null ? "disabled" : "";
                         // console.log("Container's " + container.containerName + "{" + container.guid + "} delete is '" + disable_delete + "' because container_items: ", container_items.length);
-                        tree += "<li><div>" + container.containerName +
+                        tree += "<li><div>" + 
+                            "<form style=\"display: inline;\" action=\"/move/container/" + container.id + "/up\" method=\"post\">" +
+                            "<button class=\"up-down btn btn-xs btn-default\"><span class=\"mdi mdi-arrow-up-bold\"/></button>" +
+                            "</form>" +
+                            "<form style=\"display: inline;\" action=\"/move/container/" + container.id + "/down\" method=\"post\">" +
+                            "<button class=\"up-down btn btn-xs btn-default\"><span class=\"mdi mdi-arrow-down-bold\"/></button>" +
+                            "</form>" +                            
+                            container.containerName +
                             "<button class=\"treeItem\" type=\"button\" onclick=\"populateContainerForm("+ container.id +")\">Update</button>"+
                                     "<form class=\"treeItem\" action=\"/delete/container/"+ container.id +"\" method=\"post\">" +
                                         "<button class=\"treeItem\" type=\"submit\"" + disable_delete + ">Delete</button>" +
@@ -304,13 +311,13 @@ $var language = language #so that it is available for menu.html base template
 
             // Function to generate options for dropdown recursively
             function generateContainerOptions(containers, parentGuid, level, excludeContainerId) {
-                console.log("Generating container options for parentGuid:" + parentGuid +", excludeContainerId:" + excludeContainerId);
+                // console.log("Generating container options for parentGuid:" + parentGuid +", excludeContainerId:" + excludeContainerId);
                 var options = "";
                 containers.forEach(function(container) {
                     if (container.parentContainer === parentGuid && 
                         container.id !== excludeContainerId) 
                     {
-                        console.log("   adding container id:" + container.id );
+                        // console.log("   adding container id:" + container.id );
                         options += "<option value='" + container.guid + "'>" + "&nbsp;&nbsp;&nbsp;&nbsp;".repeat(level) + container.containerName + "</option>";
                         options += generateContainerOptions(containers, container.guid, level + 1, excludeContainerId);
                     }
@@ -445,7 +452,14 @@ $var language = language #so that it is available for menu.html base template
                         if(container_items)
                         {
                             tree += "<ul>" + container_items.map(function(item){
-                                return "<li><div>" + item.itemName +
+                                return "<li><div>" + 
+                                    "<form style=\"display: inline;\" action=\"/move/item/" + item.id + "/up\" method=\"post\">" +
+                                    "<button class=\"up-down btn btn-xs btn-default\"><span class=\"mdi mdi-arrow-up-bold\"/></button>" +
+                                    "</form>" +
+                                    "<form style=\"display: inline;\" action=\"/move/item/" + item.id + "/down\" method=\"post\">" +
+                                    "<button class=\"up-down btn btn-xs btn-default\"><span class=\"mdi mdi-arrow-down-bold\"/></button>" +
+                                    "</form>" +
+                                item.itemName +
                                 "<button class=\"treeItem\" type=\"button\" onclick=\"populateItemForm("+ item.id +")\">Update</button>"+
                                 "<form class=\"treeItem\" action=\"/delete/item/"+ item.id +"\" method=\"post\">" +
                                     "<button class=\"treeItem\" type=\"submit\">Delete</button>" +
@@ -519,12 +533,12 @@ $var language = language #so that it is available for menu.html base template
 
             // Function to generate options for dropdown recursively
             function generateItemContainerOptions(containers, parentGuid, level) {
-                console.log("Generating item container options for parentGuid:" + parentGuid);
+                //console.log("Generating item container options for parentGuid:" + parentGuid);
                 var options = "";
                 containers.forEach(function(container) {
                     if (container.parentContainer === parentGuid) 
                     {
-                        console.log("   adding container id:" + container.id );
+                        //console.log("   adding container id:" + container.id );
                         options += "<option value='" + container.guid + "'>" + "&nbsp;&nbsp;&nbsp;&nbsp;".repeat(level) + container.containerName + "</option>";
                         options += generateItemContainerOptions(containers, container.guid, level + 1);
                     }

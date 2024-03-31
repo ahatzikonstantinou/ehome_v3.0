@@ -99,6 +99,10 @@ input[type="password"] {
     padding: 8px;
 }
 
+.settings button.up-down {
+    padding: 4px 4px;
+}
+
 /*fix the positioning of icons inside device labels*/
 .device-icon:before{
     position:relative;
