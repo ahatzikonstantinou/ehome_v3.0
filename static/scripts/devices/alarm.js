@@ -29,7 +29,7 @@ var Alarm = (function() {
 
     Alarm.prototype.sendCommand = function( command )
     {
-        console.log( 'Light1 will send command ', command );
+        console.log( 'Alarm will send command ', command );
         if( this.publisher )
         {
             var cmd = null;
@@ -52,7 +52,7 @@ var Alarm = (function() {
                     throw new Error("Empty mqtt_subscribe_topic in Alarm device. Cannot send command.");
                 }
                 message.destinationName = this.mqtt_subscribe_topic ;
-                console.log( 'Alarm sending message: ', message.payloadString );
+                console.log( 'Alarm sending topic: ' + message.destinationName + '  message: ', message.payloadString );
                 this.publisher.send( message );
             }
             catch( error )

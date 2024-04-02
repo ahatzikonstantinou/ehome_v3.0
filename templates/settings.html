@@ -1,4 +1,4 @@
-$def with (mqtt_servers, containers, domains, item_types, items, serial_ports, rflink, rflink_items, rflink_item_index, language,showSection)
+$def with (mqtt_servers, containers, domains, item_types, items, serial_ports, rflink, rflink_items, rflink_item_index, language, RFLinkLinesMqttTopic, showSection)
 $var page = "settings" # used in menu.html to hide/show the language dropdown based on page
 $var language = language #so that it is available for menu.html base template
 <!DOCTYPE html>
@@ -8,6 +8,8 @@ $var language = language #so that it is available for menu.html base template
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>eHome Setup</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/scripts/paho-mqtt.min.js"></script>
+
     <script>
         function decodeHtmlEntities(text) {
             var textarea = document.createElement("textarea");
@@ -152,7 +154,13 @@ $var language = language #so that it is available for menu.html base template
             // mqttServer data
             var mqttServers = [
                 $for server in mqtt_servers:
-                    { id: $(loop.index-1), address: "$server['address']", port: "$server['port']", username: "$(server['username'] if server['username'] is not None else "null" )", password: "$(server['password'] if server['password'] is not None else "null" )"},
+                    { 
+                        id: $(loop.index-1), 
+                        address: "$server['address']", 
+                        port: "$server['port']", 
+                        ws_port: $server['ws_port'], 
+                        username: "$(server['username'] if server['username'] is not None else "null" )", 
+                        password: "$(server['password'] if server['password'] is not None else "null" )"},
             ];
             function populateMqttServerForm(index) {
                 var server = document.getElementById("serversTable").rows[index].cells;
@@ -756,11 +764,11 @@ $var language = language #so that it is available for menu.html base template
                     form.submit();
                 });
 
-                updateStatesButton.addEventListener('click', function(){
-                    let form = document.getElementById('rflink_item_state_form');
-                    // console.log("form action: " + form.action);
-                    form.submit();
-                });
+                // updateStatesButton.addEventListener('click', function(){
+                //     let form = document.getElementById('rflink_item_state_form');
+                //     // console.log("form action: " + form.action);
+                //     form.submit();
+                // });
 
                 cancelCommandsButton.addEventListener('click', function(){
                     inputCommands.value = '';
@@ -1516,29 +1524,78 @@ $var language = language #so that it is available for menu.html base template
                         populateRFLinkPulsesControls("0,0");  
                     }
 
-                    var sse_connected = false;
-                    var eventSource = new EventSource('/rflink/sse');
-                    // Event listener for successful connection
-                    eventSource.onopen = function() {
-                        console.log("Connection established.");
-                    };
+                    // when false incomming mqtt lines are not displayed in the textares, otherwise they are.
+                    var receive_mqtt_lines = false; 
 
-                    // Event listener for closing the connection
-                    eventSource.onclose = function() {
-                        console.log("Connection closed.");
-                    };
+                    let mqtt_server = mqttServers[0];
+                    const client_id = "browser_" + Math.random();
+                    console.log('settings connecting to mqtt broker with ' +
+                    mqtt_server.address + ", " + mqtt_server.ws_port + ", " + client_id);
+                    settingsMqttClient = new Paho.Client(mqtt_server.address, mqtt_server.ws_port, client_id);
 
-                    eventSource.onmessage = function(event) {
-                        if(sse_connected)
-                        {
-                            rflink_messages.value += event.data +"\n";
+                    // set callback handlers
+                    settingsMqttClient.onConnectionLost = onConnectionLost;
+                    settingsMqttClient.onMessageArrived = onMessageArrived;
+
+                    // connect the client
+                    settingsMqttClient.connect({onSuccess:onConnect});
+
+                    // called when the client connects
+                    function onConnect() {
+                        // Once a connection has been made, make a subscription and send a message.
+                        console.log("onConnect");
+                        settingsMqttClient.subscribe("$RFLinkLinesMqttTopic");
+                    }
+
+                    // called when the client loses its connection
+                    function onConnectionLost(responseObject) {
+                        if (responseObject.errorCode !== 0) {
+                            console.log("onConnectionLost:"+responseObject.errorMessage);
                         }
-                    };
+                    }
+
+                    // called when a message arrives
+                    function onMessageArrived(message) {
+                        // console.log("onMessageArrived:"+message.payloadString);
+                        try
+                        {
+                            if(receive_mqtt_lines)
+                            {
+                                rflink_messages.value += message.payloadString +"\n";
+                            }
+                        }
+                        catch(e)
+                        {
+                            console.error(e);
+                        }
+                    }
+
+                    // replaced by an mqtt connection because the SSE endpoint
+                    // in the web.app required a "while True" loop to continuously
+                    // get new RFLink lines which eventually froze the web app
+                    // var sse_connected = false;
+                    // var eventSource = new EventSource('/rflink/sse');
+                    // // Event listener for successful connection
+                    // eventSource.onopen = function() {
+                    //     console.log("Connection established.");
+                    // };
+
+                    // // Event listener for closing the connection
+                    // eventSource.onclose = function() {
+                    //     console.log("Connection closed.");
+                    // };
+
+                    // eventSource.onmessage = function(event) {
+                    //     if(sse_connected)
+                    //     {
+                    //         rflink_messages.value += event.data +"\n";
+                    //     }
+                    // };
             
-                    eventSource.onerror = function(event) {
-                        console.error('EventSource failed:', event);
-                        eventSource.close();
-                    };
+                    // eventSource.onerror = function(event) {
+                    //     console.error('EventSource failed:', event);
+                    //     eventSource.close();
+                    // };
 
                     document.getElementById("activateRFLink").addEventListener("click", function activateRFLink()
                     {
@@ -1555,7 +1612,7 @@ $var language = language #so that it is available for menu.html base template
                     });
 
                     function connectRFLink() {
-                        sse_connected = true;
+                        receive_mqtt_lines = true;
                         // Hide Connect button
                         document.getElementById("rflinkConnectBtn").style.display = "none";
                         // Show Disconnect button
@@ -1563,7 +1620,7 @@ $var language = language #so that it is available for menu.html base template
                     }
 
                     function disconnectRFLink() {
-                        sse_connected = false;
+                        receive_mqtt_lines = false;
                         // Hide Disconnect button
                         document.getElementById("rflinkDisconnectBtn").style.display = "none";
                         // Show Connect button

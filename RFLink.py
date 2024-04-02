@@ -32,7 +32,7 @@ class RFLink:
     STATUS_CMD = "10;status;\r\n"
     STATUS_REPLY = "STATUS;"
     RAW_PULSE_PATTERN = ";Pulses(uSec)="
-    def __init__(self, rflink_settings):
+    def __init__(self, rflink_settings, messenger):
         self.connected = False
         self.connection_error = ""
         self.serial_port = None
@@ -44,6 +44,8 @@ class RFLink:
         self.read_write_thread.start()
 
         self.rflink_settings = rflink_settings
+        self.messenger = messenger
+        
         if rflink_settings["activated"]:
             print(f"RFLink connecting to {rflink_settings['serial_port']}")
             self.connect(rflink_settings["serial_port"])
@@ -96,7 +98,13 @@ class RFLink:
                 try:
                     if self.serial.in_waiting > 0:
                         line = self.serial.readline().decode('utf-8').strip()
-                        self.line_queue.put(line)
+                        # self.line_queue.put(line)
+                        # remove the sequence id that rflink prefixes each line with
+                        line = ';'.join(line.split(';')[2:])
+                        print(f"Will try line: {line}")
+                        if len(line.strip()) > 0:
+                            self.messenger.SendLine(line)
+                            self.messenger.SendStates(self.detectStates(line))
                 except Exception as e:
                     print(f"Error reading from serial: {e}")
 

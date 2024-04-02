@@ -1,7 +1,7 @@
 [
     {
         "itemName": "\u03a0\u03b1\u03c1\u03ac\u03b8\u03c5\u03c1\u03bf",
-        "itemMqttServer": "0",
+        "itemMqttServer": 0,
         "itemContainer": "2f72274a-e575-421d-b5ed-77c97dd49a54",
         "itemType": "WINDOW1",
         "publish": "E/4/A/O/W/state",
@@ -11,7 +11,7 @@
     },
     {
         "itemName": "\u03a0\u03cc\u03c1\u03c4\u03b1",
-        "itemMqttServer": "0",
+        "itemMqttServer": 0,
         "itemContainer": "0dbd1b4b-bc24-4a3a-ab52-c5337bf07662",
         "itemType": "DOOR1",
         "publish": "E/4/A/B/D/state",
@@ -41,7 +41,7 @@
     },
     {
         "itemName": "\u039a\u03c5\u03c1\u03af\u03b1 \u03b5\u03af\u03c3\u03bf\u03b4\u03bf\u03c2",
-        "itemMqttServer": "0",
+        "itemMqttServer": 0,
         "itemContainer": "15dc80be-6e6c-4908-bd32-f94186204b93",
         "itemType": "DOOR1",
         "publish": "E/4/A/\u0397/D/state",
@@ -115,13 +115,13 @@
         "itemContainer": "c95e141a-bf63-4467-88d2-b028cabe2dfa",
         "itemType": "ALARM",
         "publish": "E/4/A/A/state",
-        "subscribe": "",
+        "subscribe": "E/4/A/A/command",
         "filterById": false,
         "idFilterValue": ""
     },
     {
         "itemName": "\u03a4\u03c3\u03b9\u03bc\u03b5\u03bd\u03c4\u03ad\u03bd\u03b9\u03b1 \u03b4\u03b5\u03be\u03b1\u03bc\u03b5\u03bd\u03ae",
-        "itemMqttServer": "0",
+        "itemMqttServer": 0,
         "itemContainer": "f93e4c7c-ee93-4d18-bf65-1565f475cef6",
         "itemType": "WATERTANK",
         "publish": "WaterTankData",

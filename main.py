@@ -38,7 +38,7 @@ urls = (
     '/rflink/activate', 'RFLinkActivate',
     '/rflink/deactivate', 'RFLinkDeactivate',
     '/rflink/debug/(\d)', 'RFLinkDebug',
-    '/rflink/sse', 'SSE',
+    # '/rflink/sse', 'SSE',
     '/rflink_item', 'RFLinkItemIndex',
     '/rflink_item/create', 'RFLinkItemCreate',
     '/rflink_item/update/(\d+)', 'RFLinkItemUpdate',
@@ -61,7 +61,8 @@ urls = (
     '/rflink_item/(\d+)/state/(\d+)/use-max-common-substring/(\d+)', 'RFLinkItemStateUseMaxCommonSubstring',
     '/rflink_item/(\d+)/state/(\d+)/pulse-middle', 'RFLinkItemStatePulseMiddle',
     '/rflink_item/test', 'RFLinkItemTest',
-    '/language', 'SetLanguage'
+    '/language', 'SetLanguage',
+    '/healthcheck', 'HealthCheck'
 )
 
 # Create a directory named 'data' if it doesn't exist
@@ -158,17 +159,6 @@ item_types = [
 render = web.template.render('templates/', base='menu')
 # render = web.template.render('templates/')
 
-rflink = RFLink(rflink_settings)
-# For some unknown reason rflink is initialized twice
-# which means that if the rflink_settings have activated = True
-# there will be two attempts to open the serial port
-# rflink = RFLink(rflink_settings). 
-def get_rflink():
-    global rflink
-    if rflink is None:
-        rflink = RFLink(rflink_settings)
-    return rflink
-
 def get_paho_mqtt_version():
     try:
         result = subprocess.check_output(['pip', 'show', 'paho-mqtt'])
@@ -186,9 +176,7 @@ use_paho_client_constructor_arg = version.parse(paho_mqtt_version) >= version.pa
 print(f"paho_mqtt_version: {paho_mqtt_version} (:{version.parse(paho_mqtt_version)}), break_paho_mqtt_version:{break_paho_mqtt_version} (:{version.parse(break_paho_mqtt_version)}), use_paho_client_constructor_arg: {use_paho_client_constructor_arg}")
 
 def publish_mqtt(server, topic, data):
-    timestamp = datetime.now()
-    formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    data = f"{{{data} , \"timestamp\" : \"{formatted_timestamp}\"}}"
+    
     try:
         client = None
         if use_paho_client_constructor_arg:
@@ -202,22 +190,13 @@ def publish_mqtt(server, topic, data):
     except Exception as e:
         print(f"Failed to connect to {server['address']}: {e}")
 
-#
-# ATTENTION
-# For some unknown reason global variables like messenger and rflink are initialized twice because of
-# if __name__ == "__main__":    
-#    app.run()
-# If this is commented out they are initialized once, but then the application does not run
-# For Messenger double initialization is not problem. But for objects like rflink that open the serial port
-# this means that the second time the port is already open and the second initialization fails.
-# The singleton pattern does not work either.
-# The only solution is a function like get_rflink()
-
 class Messenger:
+    RFLinkLinesMqttTopic = "RFLinkLines"
     def __init__(self):
         print(f"Messenger starting.")
-        self.queue = queue.Queue()
-        thread = threading.Thread(target=self.publish_state_thread)
+        self.statesQueue = queue.Queue()
+        self.linesQueue = queue.Queue()
+        thread = threading.Thread(target=self.publish_thread)
         thread.daemon = True  # Daemonize the thread so it exits when the main program exits
         thread.start()
 
@@ -229,22 +208,39 @@ class Messenger:
         # thread.start()
     
     def SendStates(self, detectedStates):
-        self.queue.put(detectedStates)
+        self.statesQueue.put(detectedStates)
         print(f"Set to send {len(detectedStates)} states")
 
+    def SendLine(self, line):
+        self.linesQueue.put(line)
+        print(f"Set to send {line} states")
 
-    def publish_state_thread(self):
+    def publish_thread(self):
         while True:
-            if not self.queue.empty():
-                detectedStates = self.queue.get()
+            #publish detected states
+            while not self.statesQueue.empty():
+                detectedStates = self.statesQueue.get()
+                timestamp = datetime.now()
+                formatted_timestamp = timestamp.strftime("%Y-%m-%d %H:%M:%S")
                 for ds in detectedStates:
                     publish_mqtt(
-                        mqtt_servers[int(ds.rflink_item["mqtt_server"])],
+                        mqtt_servers[ds.rflink_item["mqtt_server"]],
                         ds.rflink_item["mqtt_state_publish_topic"], 
-                        f"{ds.state_name}"
+                        f"{{{ds.state_name} , \"timestamp\" : \"{formatted_timestamp}\"}}"
                     )
-            else:
-                time.sleep(0.1)  # Sleep if the queue is empty
+
+            #publish lines
+            while not self.linesQueue.empty():
+                line = self.linesQueue.get()
+                # the settings page that will listens to the RFLinkLines topic
+                # subscribes to the first of mqtt servers
+                publish_mqtt(
+                    mqtt_servers[0],
+                    Messenger.RFLinkLinesMqttTopic,
+                    line
+                )
+            
+            time.sleep(0.1)  # Sleep if the statesQueue is empty
 
     def publish_settings_thread(self):
         data = {
@@ -256,15 +252,6 @@ class Messenger:
         for server in mqtt_servers:
             publish_mqtt(server, "test/topic", json.dumps(data, indent=4))
 
-messenger = Messenger()
-
-# _messenger = None
-# def messenger():
-#     global _messenger
-#     if _messenger is None:
-#         _messenger = Messenger()
-#     return _messenger
-
 class Index:
     def GET(self):
         return render.index(
@@ -275,16 +262,18 @@ class Index:
             items=items, 
             language=settings["language"])
 
+ports = serial.tools.list_ports.comports()
+serial_ports = []
+# split each serial port object so I can get its full name
+for port, desc, hwid in sorted(ports):
+    # print(f"Port: {port}, Description: {desc}, Hardware ID: {hwid}")
+    serial_ports.append(port)
+    
 class Settings:
     def GET(self):
         data = web.input(rflink_item_index=None, showSection="mqtt")
         # print("Sending mqtt_servers: {}".format(json.dumps(mqtt_servers, indent=4)))
-        ports = serial.tools.list_ports.comports()
-        serial_ports = []
-        # split each serial port object so I can get its full name
-        for port, desc, hwid in sorted(ports):
-            # print(f"Port: {port}, Description: {desc}, Hardware ID: {hwid}")
-            serial_ports.append(port)
+        
         return render.settings(
             mqtt_servers=mqtt_servers, 
             containers=containers, 
@@ -292,10 +281,11 @@ class Settings:
             item_types=sorted(item_types, key=lambda x: x["description"]), 
             items=items, 
             serial_ports = serial_ports, 
-            rflink = { "connected" : get_rflink().connected, "error" : get_rflink().connection_error, "debug": rflink_settings["debug"] }, 
+            rflink = { "connected" : rflink.connected, "error" : rflink.connection_error, "debug": rflink_settings["debug"] }, 
             rflink_items = rflink_settings["items"], 
             rflink_item_index = data.rflink_item_index, 
             language=settings["language"],
+            RFLinkLinesMqttTopic = Messenger.RFLinkLinesMqttTopic,
             showSection=data.showSection)
 
 class CreateMqttServer:
@@ -489,7 +479,7 @@ class CreateItem:
         data = web.input()
         print('Received: {}'.format(json.dumps(data, indent=4))) 
         itemName = data.get('itemName')
-        itemMqttServer = data.get('itemMqttServer')
+        itemMqttServer = int(data.get('itemMqttServer'))
         itemContainer = data.get('itemContainer')
         itemType = data.get('itemType')
         publish = data.get('publish')
@@ -521,7 +511,7 @@ class UpdateItem:
             data = web.input()
             print('Received: {}'.format(json.dumps(data, indent=4))) 
             items[item_id]['itemName'] = data.get('itemName')
-            items[item_id]['itemMqttServer'] = data.get('itemMqttServer')
+            items[item_id]['itemMqttServer'] = int(data.get('itemMqttServer'))
             items[item_id]['itemContainer'] = data.get('itemContainer')
             items[item_id]['itemType'] = data.get('itemType')
             items[item_id]['publish'] = data.get('publish')
@@ -595,8 +585,6 @@ class MoveItem:
                         candidate_swap_id = i
         raise web.seeother('/settings?showSection=items')
 
-rflink_data = queue.Queue()
-   
 class RFLinkActivate:
     def POST(self):
         data = web.input()
@@ -604,7 +592,7 @@ class RFLinkActivate:
             rflink_settings["activated"] = True
             rflink_settings["serial_port"] = data.get("serial_port")
             print(f"serial port: {rflink_settings['serial_port']}")
-            get_rflink().connect(rflink_settings["serial_port"])
+            rflink.connect(rflink_settings["serial_port"])
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
         except Exception as e:
@@ -615,7 +603,7 @@ class RFLinkActivate:
 class RFLinkDeactivate:
     def POST(self):
         try:
-            get_rflink().disconnect()
+            rflink.disconnect()
             rflink_settings["activated"] = False
             with open(rflink_file_path, 'w') as f:
                     json.dump(rflink_settings, f, indent=4)
@@ -629,10 +617,10 @@ class RFLinkDebug:
         debug = int(debug)
         try:
             rflink_settings["debug"] = False if debug == 0 else True
-            if get_rflink().connected:
-                get_rflink().disconnect()
-                get_rflink().rflink_settings = rflink_settings
-                get_rflink().connect(rflink_settings["serial_port"])
+            if rflink.connected:
+                rflink.disconnect()
+                rflink.rflink_settings = rflink_settings
+                rflink.connect(rflink_settings["serial_port"])
             with open(rflink_file_path, 'w') as f:
                     json.dump(rflink_settings, f, indent=4)
         except Exception as e:
@@ -640,34 +628,49 @@ class RFLinkDebug:
             return json.dumps({"error": str(e)})
         raise web.seeother('/settings?showSection=rflink,pulses')
 
-class SSE:
-    def GET(self):
-        web.header('Content-Type', 'text/event-stream')
-        web.header('Cache-Control', 'no-cache')
+# rejected. No matter what, if the browser refreshes a few (10) times, the web app hangs
+# because of the "while True" that is necessary to continually read the serial
+# class SSE:
+#     def GET(self):
+#         web.header('Content-Type', 'text/event-stream')
+#         web.header('Cache-Control', 'no-cache')
 
-        # i = 0
-        rflink = get_rflink()
-        while True:
-            data = None
-            try:
-                data = rflink.readline()
-            except Exception as e:
-                print(f"Error reading from serial port: {e}")
+#         # Set keep-alive timeout to 30 seconds
+#         web.header('Cache-Control', 'no-cache')
+#         web.header('Connection', 'keep-alive')
+#         web.header('Keep-Alive', 'timeout=30')
 
-            if data:                
-                # 1. have rflink detect of this is a known state
-                # remove the sequence id that rflink prefixes each line with
-                line = ';'.join(data.split(';')[2:])
-                print(f"Will try line: {line}")
-                if len(line.strip()) == 0:
-                    print(f"Empty line")
-                    continue
-                messenger.SendStates(rflink.detectStates(line))
+#         # Send initial data immediately to establish connection
+#         yield 'data:Initial message\n\n'
 
-                # 2. Send the recieved data to the settings web page via Server-Sent-Event
-                yield f"data: {data}\n\n\n" #3 \n here to display correctly in textarea
+#         # i = 0
+#         while True:
+#             lines = []
+#             try:
+#                 while True:
+#                     line = rflink.readline()
+#                     print(f"SSE read a line")
+#                     if not line or len(line.strip()) == 0:
+#                         break;
+#                     else:
+#                         lines.append(line.strip())
+#             except Exception as e:
+#                 print(f"Error reading from serial port: {e}")
+
+#             for data in lines:                
+#                 # 1. have rflink detect of this is a known state
+#                 # remove the sequence id that rflink prefixes each line with
+#                 line = ';'.join(data.split(';')[2:])
+#                 print(f"Will try line: {line}")
+#                 if len(line.strip()) == 0:
+#                     print(f"Empty line")
+#                     continue
+#                 messenger.SendStates(rflink.detectStates(line))
+
+#                 # 2. Send the recieved data to the settings web page via Server-Sent-Event
+#                 yield f"data: {data}\n\n\n" #3 \n here to display correctly in textarea
             
-            time.sleep(0.1) #sleep is necessary in order to not block the app
+#             time.sleep(1) #sleep is necessary in order to not block the app
 
 class RFLinkItemIndex:
     def GET(self):
@@ -679,7 +682,7 @@ class RFLinkItemCreate:
         print(f"rflink_item: {json.dumps(data, indent=4)}")
         guid = str(uuid.uuid4())
         rflink_item_name = data.get("name")
-        rflink_item_mqtt_server = data.get("mqtt_server")
+        rflink_item_mqtt_server = int(data.get("mqtt_server"))
         rflink_item_mqtt_state_publish_topic = data.get("mqtt_state_publish_topic")
         rflink_item_mqtt_command_subscribe_topic = data.get("mqtt_command_subscribe_topic")
         rflink_item_commands = []
@@ -705,7 +708,7 @@ class RFLinkItemUpdate:
         data = web.input()
         if item_id < len(rflink_settings["items"]):
             rflink_item_name = data.get("name")
-            rflink_item_mqtt_server = data.get("mqtt_server")
+            rflink_item_mqtt_server = int(data.get("mqtt_server"))
             rflink_item_mqtt_state_publish_topic = data.get("mqtt_state_publish_topic")
             rflink_item_mqtt_command_subscribe_topic = data.get("mqtt_command_subscribe_topic")
             rflink_settings["items"][item_id]["name"] = rflink_item_name
@@ -814,7 +817,7 @@ class RFLinkItemCommandAddExact:
                 if len(l.strip()) == 0:
                     print(f"Empty line")
                     continue
-                pulse = get_rflink().processRawPulseLine(command['pulse_middle'], l).strip()
+                pulse = rflink.processRawPulseLine(command['pulse_middle'], l).strip()
                 if len(pulse) > 0 and pulse not in command['pulses_exact']:
                     command['pulses_exact'].append(pulse)
                 else:
@@ -840,7 +843,7 @@ class RFLinkItemStateAddExact:
                 if len(l.strip()) == 0:
                     print(f"Empty line")
                     continue
-                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l).strip()
+                pulse = rflink.processRawPulseLine(state['pulse_middle'], l).strip()
                 if len(pulse) > 0 and pulse not in state['pulses_exact']:
                     state['pulses_exact'].append(pulse)
                 else:
@@ -868,13 +871,13 @@ class RFLinkItemStateAddShift:
                     continue
                 if RFLink.RAW_PULSE_PATTERN not in l:   # silently reject non raw-pulse lines
                     continue
-                pulse = get_rflink().processRawPulseLine(state['pulse_middle'], l).strip()
+                pulse = rflink.processRawPulseLine(state['pulse_middle'], l).strip()
                 if len(pulse) > 0 and pulse not in state['pulses_shift']:
                     state['pulses_shift'].append(pulse)
                 else:
                     print(f"Pulse already in state shift {pulse}")
                     continue
-            state["max_common_substring"] = get_rflink().getMaxCommonSubstring(state['pulses_shift'])   
+            state["max_common_substring"] = rflink.getMaxCommonSubstring(state['pulses_shift'])   
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
 
@@ -914,7 +917,7 @@ class RFLinkItemStateDeleteShift:
         if item_id < len(rflink_settings["items"]) and state_id < len(rflink_settings["items"][item_id]["states"]) and pulse_sequence_id < len(rflink_settings["items"][item_id]["states"][state_id]["pulses_shift"]) :
             state = rflink_settings["items"][item_id]["states"][state_id]
             del state["pulses_shift"][pulse_sequence_id]
-            state["max_common_substring"] = get_rflink().getMaxCommonSubstring(state['pulses_shift'])
+            state["max_common_substring"] = rflink.getMaxCommonSubstring(state['pulses_shift'])
             with open(rflink_file_path, 'w') as f:
                 json.dump(rflink_settings, f, indent=4)
 
@@ -992,7 +995,7 @@ class RFLinkItemTest:
             if len(l.strip()) == 0:
                 print(f"Empty line")
                 continue
-            results.append({ "line": l, "detection": get_rflink().detect(l, rflink_settings["items"]) })
+            results.append({ "line": l, "detection": rflink.detect(l, rflink_settings["items"]) })
 
             messenger.SendStates(rflink.detectStates(l))
 
@@ -1007,13 +1010,19 @@ class SetLanguage:
             json.dump(settings, f, indent=4)
         return json.dumps({"success": True})
 
+class HealthCheck:
+    def GET(self):
+        return "OK"
+    
 #autoreload=False is required to avoid double initialization see https://stackoverflow.com/a/42307911
 app = web.application(urls, globals(), autoreload=False)
 
 if __name__ == "__main__":    
+    messenger = Messenger()
+    rflink = RFLink(rflink_settings, messenger)
     rfLinkMQTTListener = RFLinkMQTTListener(
         rflink_settings["items"],
-        get_rflink(),
+        rflink,
         mqtt_servers,
         use_paho_client_constructor_arg
     )

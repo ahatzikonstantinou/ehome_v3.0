@@ -43,7 +43,7 @@ SOURCE_FILES=(
     "main.py"
     "README.md"
     "RFLink.py"
-    "rflink_item.py"
+    "RFLinkMQTTListener.py"
 )
 
 # Copy files to Raspberry Pi using rsync
