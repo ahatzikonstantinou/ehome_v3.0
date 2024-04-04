@@ -40,7 +40,9 @@ SOURCE_FOLDERS=(
 )
 
 SOURCE_FILES=(
-    "main.py"
+    "__init__.py"
+    "ehome-service.sh"
+    "ehome.py"
     "README.md"
     "RFLink.py"
     "RFLinkMQTTListener.py"

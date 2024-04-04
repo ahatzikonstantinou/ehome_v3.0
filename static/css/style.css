@@ -1,5 +1,6 @@
-body {
+body.settints {
     font-family: Arial, sans-serif;
+    font-size: medium;
 }
 
 .settings h1 {
@@ -101,6 +102,11 @@ input[type="password"] {
 
 .settings button.up-down {
     padding: 4px 4px;
+}
+
+.settings button.action {
+    padding: 6px 6px;
+    font-size: large;
 }
 
 /*fix the positioning of icons inside device labels*/
@@ -383,4 +389,16 @@ button.expand {
 
   #itemNamePlaceholderInModalDialog {
       font-weight:bold;
+  }
+
+  .settings summary {
+    border: solid 1px darkgray;
+    border-radius: 5px;
+    padding: 4px 8px;
+    background-color: antiquewhite;
+    cursor:pointer;
+  }
+
+  ul {
+    list-style-type: none;
   }

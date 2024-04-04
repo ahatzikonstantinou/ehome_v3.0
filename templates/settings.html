@@ -76,7 +76,7 @@ $var language = language #so that it is available for menu.html base template
         ];
     </script>
 </head>
-<body>
+<body class="settings">
     <include src="menu.html"></include>
     <button onclick="toggleContent('mqtt_servers', true);toggleContent('containers', false);toggleContent('items', false);toggleContent('rflink', false);">MQTT Servers</button>
     <button onclick="toggleContent('mqtt_servers', false);toggleContent('containers', true);toggleContent('items', false);toggleContent('rflink', false);">Containers</button>
@@ -209,8 +209,9 @@ $var language = language #so that it is available for menu.html base template
             <button id ="cancelContainerBtn" type="button" hidden onclick="location.reload()">Cancel</button>
         </form>
 
-        <h2 hidden>Containers</h2>
-            <table id="containersTable" hidden>
+        <details>
+            <summary>Table of <strong>Containers</strong></summary>        
+            <table id="containersTable">
                 <thead>
                     <tr>
                         <th>GUID</th>
@@ -227,9 +228,9 @@ $var language = language #so that it is available for menu.html base template
                                 <td>$container['containerName']</td>
                                 <td>$container['parentContainer']</td>
                                 <td>
-                                    <button type="button" onclick="populateContainerForm($loop.index-1)">Update</button>
-                                    <form action="/delete/container/$(loop.index-1)" method="post">
-                                        <button type="submit">Delete</button>
+                                    <button type="button" onclick="populateContainerForm($loop.index-1)"><span class="mdi mdi-text-box-edit"/></button>
+                                    <form style="display: inline-block;" action="/delete/container/$(loop.index-1)" method="post">
+                                        <button type="submit"><span class="mdi mdi-delete"/></button>
                                     </form>
                                 </td>
                             </tr>
@@ -239,7 +240,7 @@ $var language = language #so that it is available for menu.html base template
                         </tr>
                 </tbody>
             </table>  
-
+        </details>
             <!-- Container tree -->
             <div class="container-tree">
                 <ul id="containerTree">
@@ -286,9 +287,9 @@ $var language = language #so that it is available for menu.html base template
                             "<button class=\"up-down btn btn-xs btn-default\"><span class=\"mdi mdi-arrow-down-bold\"/></button>" +
                             "</form>" +                            
                             container.containerName +
-                            "<button class=\"treeItem\" type=\"button\" onclick=\"populateContainerForm("+ container.id +")\">Update</button>"+
-                                    "<form class=\"treeItem\" action=\"/delete/container/"+ container.id +"\" method=\"post\">" +
-                                        "<button class=\"treeItem\" type=\"submit\"" + disable_delete + ">Delete</button>" +
+                            "<button class=\"action treeItem\" type=\"button\" onclick=\"populateContainerForm("+ container.id +")\"><span class=\"mdi mdi-text-box-edit\"/></button>"+
+                                    "<form style=\"display:inline-block;\" class=\"treeItem\" action=\"/delete/container/"+ container.id +"\" method=\"post\">" +
+                                        "<button class=\"treeItem action\" type=\"submit\"" + disable_delete + "><span class=\"mdi mdi-delete\"/></button>" +
                                     "</form></div>";
 
                         var children = generateContainerTree(containers, container.guid);
@@ -389,55 +390,57 @@ $var language = language #so that it is available for menu.html base template
             <button id ="cancelItemBtn" type="button" hidden onclick="location.reload()">Cancel</button>
         </form>
 
-        <table id="itemsTable">
-            <thead>
-                <tr>
-                    <th>MQTT Server</th>
-                    <th>Container</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>MQTT Publish</th>
-                    <th>MQTT Subscribe</th>
-                </tr>
-            </thead>
-            <tbody>
-                $if items:
-                    $for item in items:
-                        <tr>
-                            <td>$(mqtt_servers[int(item['itemMqttServer'])]['address'] + ":")$mqtt_servers[int(item['itemMqttServer'])]['port']</td>
-                            $code:
-                                def getParent(containerGuid, delimit):
-                                    if not containerGuid:
-                                        return ""
-                                    containerList = list(c for c in containers if c['guid'] == containerGuid)
-                                    if len(containerList) == 0:
-                                        return "Container '" + containerGuid + "' not Found"
-                                    container = containerList[0]
-                                    if container['parentContainer']:
-                                        return getParent(container['parentContainer'], delimit) + delimit + container['containerName']
-                                    else:
-                                        return container['containerName']
-                            <td>$getParent(item['itemContainer'], " - ")</td>
-                            <td>$item['itemName']</td>
-                            <td>
-                                $(t['description'] for t in item_types if t['id'] == item['itemType'])
-                            </td>
-                            <td>$item['publish']</td>
-                            <td>$item['subscribe']</td>
-                            <td>
-                                <button type="button" onclick="populateItemForm($(loop.index0))">Update</button>
-                                <form action="/delete/item/$(loop.index0)" method="post">
-                                    <button type="submit">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                $else:
+        <details>
+            <summary>Table of items</summary>
+            <table id="itemsTable">
+                <thead>
                     <tr>
-                        <td colspan="5">No items found.</td>
+                        <!-- <th>MQTT Server</th> -->
+                        <th>Container</th>
+                        <th>Name</th>
+                        <!-- <th>Type</th> -->
+                        <!-- <th>MQTT Publish</th> -->
+                        <!-- <th>MQTT Subscribe</th> -->
                     </tr>
-            </tbody>
-        </table>  
-
+                </thead>
+                <tbody>
+                    $if items:
+                        $for item in items:
+                            <tr>
+                                <!-- <td>$(mqtt_servers[int(item['itemMqttServer'])]['address'] + ":")$mqtt_servers[int(item['itemMqttServer'])]['port']</td> -->
+                                $code:
+                                    def getParent(containerGuid, delimit):
+                                        if not containerGuid:
+                                            return ""
+                                        containerList = list(c for c in containers if c['guid'] == containerGuid)
+                                        if len(containerList) == 0:
+                                            return "Container '" + containerGuid + "' not Found"
+                                        container = containerList[0]
+                                        if container['parentContainer']:
+                                            return getParent(container['parentContainer'], delimit) + delimit + container['containerName']
+                                        else:
+                                            return container['containerName']
+                                <td>$getParent(item['itemContainer'], " - ")</td>
+                                <td>$item['itemName']</td>
+                                <!-- <td>
+                                    $(t['description'] for t in item_types if t['id'] == item['itemType'])
+                                </td> -->
+                                <!-- <td>$item['publish']</td> -->
+                                <!-- <td>$item['subscribe']</td> -->
+                                <td>
+                                    <button class="action" type="button" onclick="populateItemForm($(loop.index0))"><span class="mdi mdi-text-box-edit"/></button>
+                                    <form style="display:inline-block;" action="/delete/item/$(loop.index0)" method="post">
+                                        <button class="action" type="submit"><span class="mdi mdi-delete"/></button>
+                                    </form>
+                                </td>
+                            </tr>
+                    $else:
+                        <tr>
+                            <td colspan="5">No items found.</td>
+                        </tr>
+                </tbody>
+            </table>  
+        </details>
         <!-- Items tree -->
         <div class="item-tree">
             <ul id="itemTree">
