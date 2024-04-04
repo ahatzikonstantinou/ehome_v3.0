@@ -14,6 +14,7 @@ import signal
 import subprocess   #to get paho-mqtt version
 from packaging import version #to compare paho-mqtt version
 from datetime import datetime # for mqtt message timestamp
+import sys # for port argument in command line
 
 
 urls = (
@@ -1027,4 +1028,19 @@ if __name__ == "__main__":
         use_paho_client_constructor_arg
     )
     rfLinkMQTTListener.subscribe_mqtt()
-    app.run()
+
+    # Read the configuration from config.json
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+    
+    # Extract the port from the configuration
+    config_port  = config.get('port', 8080)  # Default to 8080 if 'port' is not present in the config
+
+    # Check if a port argument is provided when running the script
+    if len(sys.argv) > 1 and sys.argv[1].isdigit():
+        port = int(sys.argv[1])  # Use the provided port argument
+    else:
+        port = config_port  # Fallback to the port value from the config file
+
+    # app.run()
+    web.httpserver.runsimple(app.wsgifunc(), ("0.0.0.0", port))
