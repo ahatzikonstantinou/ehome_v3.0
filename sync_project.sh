@@ -2,7 +2,7 @@
 
 # Replace these variables with your actual values
 PI_USERNAME="antonis"
-PI_HOST="192.168.3.10"
+PI_HOST="192.168.3.21"
 PI_DESTINATION="/opt/ehome_v3.0/"
 
 # Function to display usage information
@@ -35,13 +35,14 @@ PROJECT_FOLDER="$1"
 
 # Define the list of files and folders to be copied
 SOURCE_FOLDERS=(
+    "data"
     "static"
     "templates"
 )
 
 SOURCE_FILES=(
     "__init__.py"
-    "ehome-service.sh"
+    "ehome_service.sh"
     "ehome.py"
     "README.md"
     "RFLink.py"
