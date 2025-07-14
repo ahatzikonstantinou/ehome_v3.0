@@ -31,6 +31,7 @@ $var language = language #so that it is available for menu.html base template
     <script src="/static/scripts/devices/roller1.js"></script>
     <script src="/static/scripts/devices/roller1_auto.js"></script>
     <script src="/static/scripts/devices/server.js"></script>
+    <script src="/static/scripts/devices/switch.js"></script>
     <script src="/static/scripts/devices/temperature_humidity.js"></script>
     <script src="/static/scripts/devices/watertank.js"></script>
     <link rel="stylesheet" href="/static/css/watertank.css">
@@ -121,7 +122,8 @@ $var language = language #so that it is available for menu.html base template
                         ALARM: true,
                         CAMERA: true,
                         MOTION: true,
-                        WATERTANK: true             
+                        WATERTANK: true,
+                        SWITCH: true
                     };
 
         var deviceHtmlTemplateCache = [];
