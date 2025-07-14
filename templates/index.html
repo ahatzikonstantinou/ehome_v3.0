@@ -1107,7 +1107,7 @@ $var language = language #so that it is available for menu.html base template
                     item.device = new Watertank( item.publish, item.subscribe, item.filterById, item.idFilterValue, {} );
                     break;
                 case 'SWITCH':
-                    item.device = new Switch( item.publish, item.subscribe, {} );
+                    item.device = new Switch( item.publish, item.subscribe, new State(["active", "enabled", "open", "overriden"]) );
                     break;
             }
         }
