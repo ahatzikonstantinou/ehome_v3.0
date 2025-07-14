@@ -24,8 +24,8 @@
                 <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.open == 0, 'info': i.device.state.open == 1, 'unavailable': i.device.state.open == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.open == 1 ? 'OPEN' : 'CLOSED')}">
                     {{i.device.state.open == 1 ? 'OPEN' : 'CLOSED' }}
                 </div>
-                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.overriden == 0, 'info': i.device.state.overriden == 1, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.overriden == 1 ? 'OVERRIDEN' : 'NON-OVERRIDEN')}">
-                    {{i.device.state.overriden == 1 ? 'OPEN' : 'CLOSED' }}
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.overriden == 0, 'info': i.device.state.overriden == 1, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.overriden == 1 ? 'OVERRIDEN' : 'NON_OVERRIDEN')}">
+                    {{i.device.state.overriden == 1 ? 'OVERRIDEN' : 'NON_OVERRIDEN' }}
                 </div>
             </div>
             <div>

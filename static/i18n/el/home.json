@@ -37,7 +37,7 @@
             "ENABLED": "Ενεργοποιημένος",
             "DISABLED": "Απενεργοποιημένος",
             "OVERRIDEN": "Παράκαμψη",
-            "NON-OVERRIDEN": "Χωρίς Παράκαμψη"
+            "NON_OVERRIDEN": "Χωρίς Παράκαμψη"
         },
         "filters": {
             "all": "Όλα",

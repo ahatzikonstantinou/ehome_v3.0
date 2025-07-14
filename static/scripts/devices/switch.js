@@ -22,7 +22,7 @@ var Switch = (function() {
             switch( command )
             {
                 case "enable": 
-                    text = "l";
+                    text = "1";
                     topicSuffix = "/enable"
                     break;
                 case "disable": 
@@ -30,20 +30,20 @@ var Switch = (function() {
                     topicSuffix = "/enable"
                     break;
                 case "override": 
-                    text = "l";
+                    text = "1";
                     topicSuffix = "/override"
                     break;
                 case "stop_override": 
                     text = "0";
                     topicSuffix = "/override"
                     break;
-                case "/report_status": 
+                case "report_status": 
                     topicSuffix = "/report_status"
                     break;
             }
             var message = new Paho.Message( text );
-            message.destinationName = this.mqtt_subscribe_topic ;
-            console.log( 'Switch sending message: ', message.payloadString );
+            message.destinationName = this.mqtt_subscribe_topic + topicSuffix;
+            console.log( 'Switch sending topic: ' + message.destinationName + ', message: ', message.payloadString );
             this.publisher.send( message );
         }
     }

@@ -37,7 +37,7 @@
             "ENABLED": "Enables",
             "DISABLED": "Disabled",
             "OVERRIDEN": "Overriden",
-            "NON-OVERRIDEN": "Non-Overriden"
+            "NON_OVERRIDEN": "Non-Overriden"
         },
         "filters": {
             "all": "All",
