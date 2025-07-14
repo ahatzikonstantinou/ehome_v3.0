@@ -15,18 +15,6 @@ var Alarm = (function() {
         this.publisher = publisher;
     }
 
-    Alarm.prototype.set = function( value )
-    {
-        console.log( 'Alarm will send value ', value, ' to topic ', this.mqtt_publish_topic );
-        if( this.publisher )
-        {
-            var message = new Paho.Message( value );
-            message.destinationName = this.mqtt_publish_topic ;
-            console.log( 'Alarm sending message: ', message );
-            this.publisher.send( message );
-        }
-    }
-
     Alarm.prototype.sendCommand = function( command )
     {
         console.log( 'Alarm will send command ', command );

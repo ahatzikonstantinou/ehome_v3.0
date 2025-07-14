@@ -1,0 +1,60 @@
+<div class="device-panel" ng-show="i.guiFilter('SWITCH')">
+    <div class="mqtt" ng-show="showMqttTopics">
+        <span class="item">[{{i.type}}]</span>
+        <span class="text-primary">{{i.device.mqtt_subscribe_topic}}</span>
+        <span class="text-danger">{{i.device.mqtt_publish_topic}}</span>
+    </div>
+
+    <div class="device" style="overflow: auto;">
+        <div class="device-label">
+            <span class="mdi power-socket-fr device-icon"/>
+            <span class="device-name">{{i.name}}</span>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.showDeviceCommands = !i.device.showDeviceCommands">
+                <span class="mdi mdi-dots-horizontal"></span>
+            </button>    
+        </div>
+        <div class="state-container">
+            <div class="state-row">
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.active == 0, 'info': i.device.state.active == 1, 'unavailable': i.device.state.active == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.active == 1 ? 'ACTIVE' : 'INACTIVE')}">
+                    {{i.device.state.active == 1 ? 'ACTIVE' : 'INACTIVE' }}
+                </div>
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.enabled == 0, 'info': i.device.state.enabled == 1, 'unavailable': i.device.state.enabled == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.enabled == 1 ? 'ACTIVE' : 'INACTIVE')}">
+                    {{i.device.state.enabled == 1 ? 'ENABLED' : 'DISABLED' }}
+                </div>
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.open == 0, 'info': i.device.state.open == 1, 'unavailable': i.device.state.open == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.open == 1 ? 'OPEN' : 'CLOSED')}">
+                    {{i.device.state.open == 1 ? 'OPEN' : 'CLOSED' }}
+                </div>
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.overriden == 0, 'info': i.device.state.overriden == 1, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.overriden == 1 ? 'OPEN' : 'CLOSED')}">
+                    {{i.device.state.overriden == 1 ? 'OPEN' : 'CLOSED' }}
+                </div>
+            </div>
+            <div>
+                <span ng-textContent="i.device.lastUpdateDate" class="last-update"></span>
+            </div>
+        </div>
+    </div>
+    <div ng-show="i.device.showDeviceCommands">    
+        <div>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('enable')">
+                <span class="mdi mdi-lightbulb-outline">Enable</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('disable')">
+                <span class="mdi mdi-lightbulb-off-outline">Disable</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('override')">
+                <span class="mdi mdi-electric-switch-closed">Override</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('stop_override')">
+                <span class="mdi mdi-electric-switch">Stop Override</span>
+            </button>
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('report_status')">
+                <span class="mdi mdi-list-status">Report Status</span>
+            </button>            
+        </div>
+        <div>
+            <div>State:</div>
+            <div><span class="device-mqtt-state">{{i.device.mqtt_message}}</span></div>
+        </div>
+    </div>
+    <!-- <div class="separator"></div> -->
+</div>

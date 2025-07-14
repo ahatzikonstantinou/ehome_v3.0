@@ -45,7 +45,7 @@ function MqttDevice( mqtt_publish_topic, state, mqtt_subscribe_topic )
     this.mqtt_publish_topic = typeof mqtt_publish_topic !== 'undefined' ? mqtt_publish_topic : null;
     this.state = state;
     this.lastUpdateDate = '-';  // ATTENTION: items are proxied to trigger ui update when a property
-                                // changes. Date proeprties do not work with proxies therefore
+                                // changes. Date properties do not work with proxies therefore
                                 // date properties must be stored as string and for manipulation
                                 // converted back and forth between Date object and string
     this.publisher = null;
@@ -59,12 +59,12 @@ MqttDevice.prototype.update = function( topic, message )
 {
     if( topic == this.mqtt_publish_topic )
     {
-        // console.log( 'MqttDevice[' + this.mqtt_publish_topic +']: this message is for me.' );
+        console.log( 'MqttDevice[' + this.mqtt_publish_topic +']: this message is for me.' );
         try
         {            
             let newState = JSON.parse( message );
             this.state.Update( newState );
-            // console.log("state now: ", this.state);
+             console.log("state now: ", this.state);
             if (newState.hasOwnProperty('timestamp'))
             {
                 this.lastUpdateDate = newState.timestamp;    
