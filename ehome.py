@@ -148,6 +148,7 @@ item_types = [
     { "id":"LIGHT", "description": "LIGHT"}, 
     { "id":"LIGHT1", "description": "Light single"}, 
     { "id":"LIGHT2", "description": "Light double"}, 
+    { "id":"SWITCH", "description": "Switch"}, 
     { "id":"TEMPERATURE_HUMIDITY", "description": "Temperature - Humidity"}, 
     { "id":"IPCAMERAPANTILT", "description": "IP Camera pan-tilt"}, 
     { "id":"MOTIONCAMERAPANTILT", "description": "Motion Camera pan-tilt"}, 

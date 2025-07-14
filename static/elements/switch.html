@@ -7,7 +7,7 @@
 
     <div class="device" style="overflow: auto;">
         <div class="device-label">
-            <span class="mdi power-socket-fr device-icon"/>
+            <span class="mdi mdi-power-socket-fr device-icon"/>
             <span class="device-name">{{i.name}}</span>
             <button type="button" class="btn btn-xs btn-default" ng-click="i.device.showDeviceCommands = !i.device.showDeviceCommands">
                 <span class="mdi mdi-dots-horizontal"></span>
@@ -24,7 +24,7 @@
                 <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.open == 0, 'info': i.device.state.open == 1, 'unavailable': i.device.state.open == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.open == 1 ? 'OPEN' : 'CLOSED')}">
                     {{i.device.state.open == 1 ? 'OPEN' : 'CLOSED' }}
                 </div>
-                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.overriden == 0, 'info': i.device.state.overriden == 1, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.overriden == 1 ? 'OPEN' : 'CLOSED')}">
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.overriden == 0, 'info': i.device.state.overriden == 1, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }" data-translate="home.state.{(i.device.state.overriden == 1 ? 'OVERRIDEN' : 'NON-OVERRIDEN')}">
                     {{i.device.state.overriden == 1 ? 'OPEN' : 'CLOSED' }}
                 </div>
             </div>
