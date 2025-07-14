@@ -1037,7 +1037,8 @@ $var language = language #so that it is available for menu.html base template
                         ALARM: true,
                         CAMERA: true,
                         MOTION: true,
-                        TANK: true                   
+                        TANK: true,
+                        SWITCH: true            
                     }
                 },
                 expandAllChildren: function( expand ) { this.gui.collapsed = expand; for( let c = 0 ; c < this.containers.length ; c++ ) { this.containers[c].expandAllChildren( expand ); } }
@@ -1104,6 +1105,9 @@ $var language = language #so that it is available for menu.html base template
                     break;
                 case 'WATERTANK':
                     item.device = new Watertank( item.publish, item.subscribe, item.filterById, item.idFilterValue, {} );
+                    break;
+                case 'SWITCH':
+                    item.device = new Switch( item.publish, item.subscribe, {} );
                     break;
             }
         }
