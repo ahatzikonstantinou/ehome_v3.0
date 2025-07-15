@@ -35,16 +35,16 @@
     </div>
     <div ng-show="i.device.showDeviceCommands">    
         <div>
-            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('enable')">
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('enable')" ng-show="i.device.state.enable == 0">
                 <span class="mdi mdi-lightbulb-outline">Enable</span>
             </button>
-            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('disable')">
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('disable')" ng-show="i.device.state.enable == 1">
                 <span class="mdi mdi-lightbulb-off-outline">Disable</span>
             </button>
-            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('override')">
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('override')" ng-show="i.device.state.override == 0">
                 <span class="mdi mdi-electric-switch-closed">Override</span>
             </button>
-            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('stop_override')">
+            <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('stop_override')" ng-show="i.device.state.override == 1">
                 <span class="mdi mdi-electric-switch">Stop Override</span>
             </button>
             <button type="button" class="btn btn-xs btn-default" ng-click="i.device.sendCommand('report_status')">

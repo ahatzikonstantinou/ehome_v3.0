@@ -34,8 +34,10 @@
             "offline": "Unavailable",
             "ACTIVE": "Active",
             "INACTIVE": "Inactive",
-            "ENABLED": "Enables",
+            "ENABLED": "Enabled",
             "DISABLED": "Disabled",
+            "ENABLE": "Enable",
+            "DISABLE": "Disable",
             "OVERRIDEN": "Overriden",
             "NON_OVERRIDEN": "Non-Overriden"
         },
