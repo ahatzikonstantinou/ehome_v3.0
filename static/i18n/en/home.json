@@ -41,6 +41,18 @@
             "OVERRIDEN": "Overriden",
             "NON_OVERRIDEN": "Non-Overriden"
         },
+        "switch": {
+            "OPEN": "Open",
+            "CLOSED": "Closed",
+            "POWERED": "Powered",
+            "UNPOWERED": "Unpowered",
+            "ACTIVE": "Powered",
+            "INACTIVE": "Unpowered",
+            "ENABLED": "Enabled",
+            "DISABLED": "Disabled",
+            "OVERRIDEN": "Overriden",
+            "NON_OVERRIDEN": "Non-Overriden"
+        },
         "filters": {
             "all": "All",
             "none": "None"

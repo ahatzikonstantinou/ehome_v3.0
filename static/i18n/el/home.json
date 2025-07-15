@@ -41,6 +41,20 @@
             "OVERRIDEN": "Παράκαμψη",
             "NON_OVERRIDEN": "Χωρίς Παράκαμψη"
         },
+        "switch": {
+            "OPEN": "Ανοιχτό",
+            "CLOSED": "Κλειστό",
+            "POWERED": "Με ρεύμα",
+            "UNPOWERED": "Χωρίς ρεύμα",
+            "ACTIVE": "Ενεργό",
+            "INACTIVE": "Ανενεργό",
+            "ENABLED": "Ενεργοποιημένο",
+            "DISABLED": "Απενεργοποιημένο",
+            "ENABLE": "Ενεργοποίηση",
+            "DISABLE": "Απενεργοποίηση",
+            "OVERRIDEN": "Παράκαμψη",
+            "NON_OVERRIDEN": "Χωρίς Παράκαμψη"
+        },
         "filters": {
             "all": "Όλα",
             "none": "Κανένα"
