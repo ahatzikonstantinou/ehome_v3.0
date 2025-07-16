@@ -144,6 +144,11 @@ input[type="password"] {
     top:4px;
 }
 
+.device-panel .state.icon-only {
+    padding: 7px 5px 7px 5px;
+    min-width: 0;
+}
+
 .device-panel .device {
     display: inline-flex;
     width: 100%

@@ -128,5 +128,15 @@
         "subscribe": "WaterTankDataRequest",
         "filterById": true,
         "idFilterValue": "water_tank_1"
+    },
+    {
+        "itemName": "\u03a0\u03b9\u03b5\u03c3\u03c4\u03b9\u03ba\u03cc \u03c3\u03c0\u03b9\u03c4\u03b9\u03bf\u03cd",
+        "itemMqttServer": 0,
+        "itemContainer": "23d2da99-d510-42bb-994c-45aac5fb3eb1",
+        "itemType": "SWITCH",
+        "publish": "alyki/piestiko-spiti/status",
+        "subscribe": "alyki/piestiko-spiti",
+        "filterById": false,
+        "idFilterValue": ""
     }
 ]
