@@ -19,22 +19,25 @@ var Switch = (function() {
         {
             var text = "";
             var topicSuffix = "";
+            // Note: switch inputs are low positive as they come from an RPI i.e. 
+            // a 1 means no signal in input, open relay at output, and a 0 means 
+            // signal detected in input, close relay at output
             switch( command )
             {
                 case "enable": 
-                    text = "1";
+                    text = "0";
                     topicSuffix = "/enable"
                     break;
                 case "disable": 
-                    text = "0";
+                    text = "1";
                     topicSuffix = "/enable"
                     break;
                 case "override": 
-                    text = "1";
+                    text = "0";
                     topicSuffix = "/override"
                     break;
                 case "stop_override": 
-                    text = "0";
+                    text = "1";
                     topicSuffix = "/override"
                     break;
                 case "report_status": 

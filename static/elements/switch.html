@@ -14,28 +14,29 @@
             </button>    
         </div>
         <div class="state-container">
+            <!--Note: switch inputs are low positive as they come from an RPI i.e. a 1 means no signal in input, open relay at output, and a 0 means signal detected in input, close relay at output-->
             <div class="state-row">
-                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.active == 1, 'info': i.device.state.active == 0, 'unavailable': i.device.state.active == 'UNAVAILABLE' }" data-translate="home.switch.{(i.device.state.active == 1 ? 'ACTIVE' : 'INACTIVE')}">
-                    {{i.device.state.active == 1 ? 'ACTIVE' : 'INACTIVE' }}
+                <div style="float:right;" class="state top" ng-class="{ 'warning': i.device.state.active == 0, 'info': i.device.state.active == 1, 'unavailable': i.device.state.active == 'UNAVAILABLE' }" data-translate="home.switch.{(i.device.state.active == 0 ? 'ACTIVE' : 'INACTIVE')}">
+                    {{i.device.state.active == 0 ? 'ACTIVE' : 'INACTIVE' }}
                 </div>
-                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.overriden == 1, 'info': i.device.state.overriden == 0, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }">
-                    <span class="mdi mdi-autorenew" ng-show="i.device.state.overriden == 1"></span>
-                    <span class="mdi mdi-autorenew-off" ng-show="i.device.state.overriden == 0"></span>
+                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.overriden == 0, 'info': i.device.state.overriden == 1, 'unavailable': i.device.state.overriden == 'UNAVAILABLE' }">
+                    <span class="mdi mdi-autorenew" ng-show="i.device.state.overriden == 0"></span>
+                    <span class="mdi mdi-autorenew-off" ng-show="i.device.state.overriden == 1"></span>
                     <span class="mdi mdi-exclamation" ng-show="i.device.state.overriden != 0 && i.device.state.overriden != 1"></span>
                 </div>               
-                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.open == 0, 'info': i.device.state.open == 1, 'unavailable': i.device.state.open == 'UNAVAILABLE' }">
-                    <span class="mdi mdi-electric-switch" ng-show="i.device.state.open == 1"></span>
-                    <span class="mdi mdi-electric-switch-closed" ng-show="i.device.state.open == 0"></span>
-                    <span class="mdi mdi-exclamation" ng-show="i.device.state.open != 0 && i.device.state.open != 1"></span>
+                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.closed == 0, 'info': i.device.state.closed == 1, 'unavailable': i.device.state.closed == 'UNAVAILABLE' }">
+                    <span class="mdi mdi-electric-switch" ng-show="i.device.state.closed == 1"></span>
+                    <span class="mdi mdi-electric-switch-closed" ng-show="i.device.state.closed == 0"></span>
+                    <span class="mdi mdi-exclamation" ng-show="i.device.state.closed != 0 && i.device.state.closed != 1"></span>
                 </div>               
-                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.enabled == 1, 'info': i.device.state.enabled == 0, 'unavailable': i.device.state.enabled == 'UNAVAILABLE' }">
-                    <span class="mdi mdi-arrow-right-bold-circle-outline" ng-show="i.device.state.enabled == 1"></span>
-                    <span class="mdi mdi-minus-circle-outline" ng-show="i.device.state.enabled == 0"></span>
+                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.enabled == 0, 'info': i.device.state.enabled == 1, 'unavailable': i.device.state.enabled == 'UNAVAILABLE' }">
+                    <span class="mdi mdi-arrow-right-bold-circle-outline" ng-show="i.device.state.enabled == 0"></span>
+                    <span class="mdi mdi-minus-circle-outline" ng-show="i.device.state.enabled == 1"></span>
                     <span class="mdi mdi-exclamation" ng-show="i.device.state.enabled != 0 && i.device.state.enabled != 1"></span>
                 </div>               
-                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.powered == 1, 'info': i.device.state.powered == 0, 'unavailable': i.device.state.powered == 'UNAVAILABLE' }">
-                    <span class="mdi mdi-flash" ng-show="i.device.state.powered == 1"></span>
-                    <span class="mdi mdi-flash-outline" ng-show="i.device.state.powered == 0"></span>
+                <div style="float:right;" class="state top icon-only" ng-class="{ 'warning': i.device.state.powered == 0, 'info': i.device.state.powered == 1, 'unavailable': i.device.state.powered == 'UNAVAILABLE' }">
+                    <span class="mdi mdi-flash" ng-show="i.device.state.powered == 0"></span>
+                    <span class="mdi mdi-flash-outline" ng-show="i.device.state.powered == 1"></span>
                     <span class="mdi mdi-exclamation" ng-show="i.device.state.powered != 0 && i.device.state.powered != 1"></span>
                 </div>               
             </div>

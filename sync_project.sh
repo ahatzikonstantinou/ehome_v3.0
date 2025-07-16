@@ -2,7 +2,7 @@
 
 # Replace these variables with your actual values
 PI_USERNAME="antonis"
-PI_HOST="192.168.3.23"
+PI_HOST="192.168.3.21"
 PI_DESTINATION="/opt/ehome_v3.0/"
 
 # Function to display usage information
