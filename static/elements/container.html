@@ -47,12 +47,15 @@
             <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.SWITCH, 'btn-primary': c.gui.filter.SWITCH }" ng-click="c.gui.filter.SWITCH = !c.gui.filter.SWITCH">
                 <span class="mdi mdi-power-socket-fr"/>
             </button>        
+            <button type="button" class="btn btn-xs filter" ng-class="{ 'btn-default': !c.gui.filter.WATER_PUMP, 'btn-primary': c.gui.filter.WATER_PUMP }" ng-click="c.gui.filter.WATER_PUMP = !c.gui.filter.WATER_PUMP">
+                <span class="mdi mdi-water-pump"/>
+            </button>        
 
             <span style="display: inline-block; margin-top:8px;">
-                <button type="button" class="btn btn-xs btn-link" ng-click="c.gui.filter.DOOR = c.gui.filter.WINDOW = c.gui.filter.LIGHT = c.gui.filter.CLIMATE = c.gui.filter.COVER = c.gui.filter.ALARM = c.gui.filter.CAMERA = c.gui.filter.MOTION = c.gui.filter.TANK = c.gui.filter.SWITCH = true">
+                <button type="button" class="btn btn-xs btn-link" ng-click="c.gui.filter.DOOR = c.gui.filter.WINDOW = c.gui.filter.LIGHT = c.gui.filter.CLIMATE = c.gui.filter.COVER = c.gui.filter.ALARM = c.gui.filter.CAMERA = c.gui.filter.MOTION = c.gui.filter.TANK = c.gui.filter.SWITCH = c.gui.filter.WATER_PUMP = true">
                     <span data-translate="home.filters.all">All</span>
                 </button>        
-                <button type="button" class="btn btn-xs btn-link" ng-click="c.gui.filter.DOOR = c.gui.filter.WINDOW = c.gui.filter.LIGHT = c.gui.filter.CLIMATE = c.gui.filter.COVER = c.gui.filter.ALARM = c.gui.filter.CAMERA = c.gui.filter.MOTION = c.gui.filter.TANK = c.gui.filter.SWITCH = false">
+                <button type="button" class="btn btn-xs btn-link" ng-click="c.gui.filter.DOOR = c.gui.filter.WINDOW = c.gui.filter.LIGHT = c.gui.filter.CLIMATE = c.gui.filter.COVER = c.gui.filter.ALARM = c.gui.filter.CAMERA = c.gui.filter.MOTION = c.gui.filter.TANK = c.gui.filter.SWITCH = c.gui.filter.WATER_PUMP = false">
                     <span data-translate="home.filters.none">None</span>
                 </button>
             </span>                

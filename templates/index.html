@@ -33,6 +33,7 @@ $var language = language #so that it is available for menu.html base template
     <script src="/static/scripts/devices/server.js"></script>
     <script src="/static/scripts/devices/switch.js"></script>
     <script src="/static/scripts/devices/temperature_humidity.js"></script>
+    <script src="/static/scripts/devices/water-pump.js"></script>
     <script src="/static/scripts/devices/watertank.js"></script>
     <link rel="stylesheet" href="/static/css/watertank.css">
     <script src="/static/scripts/devices/window1.js"></script>
@@ -123,7 +124,8 @@ $var language = language #so that it is available for menu.html base template
                         CAMERA: true,
                         MOTION: true,
                         WATERTANK: true,
-                        SWITCH: true
+                        SWITCH: true,
+                        WATER_PUMP: true
                     };
 
         var deviceHtmlTemplateCache = [];
@@ -249,7 +251,7 @@ $var language = language #so that it is available for menu.html base template
                 ]
             },
             {
-                elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto", "watertank", "motion-sensor", "switch"], 
+                elements: ["item", "alarm", "door1", "door2r", "window1", "window1r", "window2r", "light1", "light2", "ipcamera", "ipcamera-pan-tilt", "motion-camera", "motion-camera-pan-tilt", "temphum", "net", "roller1", "roller1auto", "water-pump",  "watertank", "motion-sensor", "switch"], 
                 attributesToContext: [
                     { attribute: "item", contextProperty: 'i'},
                     { attribute: "filter", contextProperty: 'filter'},
@@ -1038,7 +1040,8 @@ $var language = language #so that it is available for menu.html base template
                         CAMERA: true,
                         MOTION: true,
                         TANK: true,
-                        SWITCH: true            
+                        SWITCH: true,
+                        WATER_PUMP: true
                     }
                 },
                 expandAllChildren: function( expand ) { this.gui.collapsed = expand; for( let c = 0 ; c < this.containers.length ; c++ ) { this.containers[c].expandAllChildren( expand ); } }
@@ -1108,6 +1111,9 @@ $var language = language #so that it is available for menu.html base template
                     break;
                 case 'SWITCH':
                     item.device = new Switch( item.publish, item.subscribe, new State(["powered", "active", "enabled", "closed", "overriden", "enable", "override"]) );
+                    break;
+                case 'WATER_PUMP':
+                    item.device = new WaterPump( item.publish, item.subscribe, new State(["on"]) );
                     break;
             }
         }

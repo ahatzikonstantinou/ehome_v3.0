@@ -156,6 +156,7 @@ item_types = [
     { "id":"MOTIONCAMERA", "description": "Motion Camera"},
     { "id":"MOTIONSENSOR", "description": "Motion sensor"},
     { "id":"WATERTANK", "description": "Water tank"},
+    { "id":"WATER_PUMP", "description": "Water pump"},
 ]
  
 render = web.template.render('templates/', base='menu')
