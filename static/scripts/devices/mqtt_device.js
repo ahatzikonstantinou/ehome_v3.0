@@ -59,7 +59,7 @@ MqttDevice.prototype.update = function( topic, message )
 {
     if( topic == this.mqtt_publish_topic )
     {
-        console.log( 'MqttDevice[' + this.mqtt_publish_topic +']: this message is for me.' );
+        console.log( 'MqttDevice[' + this.mqtt_publish_topic +']: this message is for me: ' + message );
         try
         {            
             let newState = JSON.parse( message );

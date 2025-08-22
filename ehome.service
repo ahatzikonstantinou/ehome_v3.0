@@ -1,0 +1,13 @@
+[Unit]
+Description=eHome automation
+After=syslog.target network.target network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -u /opt/ehome_v3.0/ehome.py
+Restart=always
+WorkingDirectory=/opt/ehome_v3.0
+SyslogIdentifier=ehome
+
+[Install]
+WantedBy=multi-user.target
